@@ -24,6 +24,7 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
     ${LIBAPPROX_INC_DIR}
     ${LIBAPPROX_BASE_DIR}
+    ${LIBAPPROX_SRC_DIR}
     ${CLANG_SOURCE_INCLUDE}
 )
 
