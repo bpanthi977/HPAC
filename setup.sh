@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+export nlohmann_json_DIR=/home/bp0110/hpacml-deps/json/build/
+export HDF5_Dir=/home/bp0110/hpacml-deps/hdf5/build/HDF5-1.14.5-Linux/HDF_Group/HDF5/1.14.5
+
 prefix=$1
 threads=$2
 current_dir=$(pwd)
@@ -21,8 +25,8 @@ LIGHTCYAN='\033[1;36m'
 WHITE='\033[1;37m'
 
 clang_bin=$prefix/bin/clang
-#clang_bin=/dev/null
-approx_runtime_lib=/dev/null
+approx_runtime_lib=$prefix/lib/libapprox.so
+openmp_lib=$prefix/lib/libomp.so
 
 
 if [ ! -f $clang_bin ]; then
@@ -45,7 +49,7 @@ if [ ! -f $clang_bin ]; then
     ../llvm
 
     ninja -j $threads
-    ninja -j $threads install 
+    ninja -j $threads install
     popd
     echo "#!/bin/bash" > hpac_env.sh
     echo "export PATH=$prefix/bin/:\$PATH" >> hpac_env.sh
@@ -54,32 +58,58 @@ if [ ! -f $clang_bin ]; then
     echo "export CPP=clang++" >> hpac_env.sh
 fi
 
-full_path=$(python3 -c "import torch; print(torch.__file__)")
-torch_path=$(dirname "$full_path")
-torch_d=$(echo "$torch_path"/share/cmake/Torch)
-echo Torch directory: $torch_d
+# if [ ! -f $openmp_lib ]; then
+#   mkdir -p build_openmp
+#   mkdir -p $prefix
+#   pushd build_openmp
+#   cmake -G Ninja \
+#     -DCMAKE_INSTALL_PREFIX=$prefix \
+#     -DLLVM_CCACHE_BUILD='Off'\
+#     -DCMAKE_EXPORT_COMPILE_COMMANDS='On'\
+#     -DCMAKE_BUILD_TYPE='RelWithDebInfo' \
+#     -DCMAKE_C_COMPILER='gcc' \
+#     -DCMAKE_CXX_COMPILER='g++' \
+#     -DBUILD_SHARED_LIBS='On' \
+#     ../openmp
 
-hdf5_d=`spack location -i hdf5`
-echo HDF5 directory: $hdf5_d
-
-gpuarchsm=$(python3 approx/approx_utilities/detect_arch.py $prefix)
-gpuarch=$(echo $gpuarchsm | cut -d ';' -f 1)
-gpusm=$(echo $gpuarchsm | cut -d ';' -f 2)
-
-echo "export HPAC_GPU_ARCH=$gpuarch" >> hpac_env.sh
-echo "export HPAC_GPU_SM=$gpusm" >> hpac_env.sh
-
-if [ ! $? -eq 0 ]; then
-  echo "ERROR: No GPU architecture targets found, exiting..."
-  exit 1
-else
-  echo "Building for GPU architecture $gpuarch, compute capability $gpusm"
-fi
-source hpac_env.sh
+#     ninja -j $threads
+#     ninja -j $threads install
+#     popd
+# fi
 
 if [ ! -f $approx_runtime_lib ]; then
+
+  full_path=$(python -c "import torch; print(torch.__file__)")
+  torch_path=$(dirname "$full_path")
+  torch_d=$(echo "$torch_path"/share/cmake/Torch)
+  echo Torch directory: $torch_d
+
+  hdf5_d=$HDF5_Dir
+  echo HDF5 directory: $hdf5_d
+
+  gpuarchsm=$(python3 approx/approx_utilities/detect_arch.py $prefix)
+  gpuarch=$(echo $gpuarchsm | cut -d ';' -f 1)
+  gpusm=$(echo $gpuarchsm | cut -d ';' -f 2)
+
+  echo "export HPAC_GPU_ARCH=$gpuarch" >> hpac_env.sh
+  echo "export HPAC_GPU_SM=$gpusm" >> hpac_env.sh
+
+  if [ ! $? -eq 0 ]; then
+
+     echo "ERROR: No GPU architecture targets found, exiting..."
+
+     exit 1
+  else
+
+     echo "Building for GPU architecture $gpuarch, compute capability $gpusm"
+  fi
+  source hpac_env.sh
+
+
   mkdir build_hpac
   pushd build_hpac
+  echo "PATH is " $PATH
+  echo "Cmake version is:" $(cmake --version)
   CC=clang CPP=clang++ cmake -G Ninja \
       -DCMAKE_INSTALL_PREFIX=$prefix \
       -DLLVM_EXTERNAL_CLANG_SOURCE_DIR=${current_dir}/clang/ \
@@ -91,6 +121,7 @@ if [ ! -f $approx_runtime_lib ]; then
     -DCAFFE2_USE_CUDNN='On' \
       -DTorch_DIR=$torch_d \
       -DHDF5_Dir=$hdf5_d \
+      -DMKL_THREADING=gnu_thread \
      ../approx
     ninja -j $threads
     ninja -j $threads install

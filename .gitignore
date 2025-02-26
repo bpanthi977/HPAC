@@ -50,6 +50,7 @@ autoconf/autom4te.cache
 /compile_commands.json
 # Visual Studio built-in CMake configuration
 /CMakeSettings.json
+**/CMakeFiles
 # CLion project configuration
 /.idea
 
@@ -61,6 +62,7 @@ autoconf/autom4te.cache
 .vs
 # pythonenv for github Codespaces
 pythonenv*
+.venv
 # clangd index. (".clangd" is a config file now, thus trailing slash)
 .clangd/
 .cache
@@ -76,3 +78,5 @@ pythonenv*
 *.o
 *.ll
 *.log
+/pytorch/
+/approx/third_party/NVTX/
