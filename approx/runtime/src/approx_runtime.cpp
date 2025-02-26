@@ -82,8 +82,7 @@ public:
   int64_t optChunkSize;
   vector<int64_t> tensorShape;
   BaseDB *db;
-  SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double> Model{
-      "/scratch/mzu/zanef2/surrogates/SurrogateBenchmarks/models/lulesh/model.pt", false};
+  SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double> Model{"", false};
 
 
   ApproxRuntimeConfiguration() {
