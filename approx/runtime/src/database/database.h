@@ -18,9 +18,15 @@
 
 #define HDF5_ERROR(id)                                                         \
   if (id < 0) {                                                                \
-    fprintf(stderr, "Error Happened in Line:%s:%d\n", __FILE__, __LINE__);     \
+    fprintf(stderr, "Error Happened in Line: %s:%d:\n", __FILE__, __LINE__);     \
     exit(-1);                                                                  \
   }
+
+#ifdef DEBUG
+#define dbgs() std::cout << "[Debug] "
+#else
+#define dbgs() if(0) std::cout
+#endif
 
 namespace {
   template<typename T>
@@ -103,6 +109,8 @@ class HDF5TensorRegionView {
       initializeTensorData(tensorData, name, tensor, DType);
     }
 
+    dbgs() << "[Debug] Writing Tensor Data " << name << DType << "\n";
+
     auto memSpace = H5Dget_space(tensorData.dset);
     HDF5_ERROR(memSpace);
     auto &shape = tensorData.shape;
@@ -146,6 +154,9 @@ class HDF5TensorRegionView {
 
   template<typename Tensor>
   void writeTensorDataChunk(TensorData &tensorData, Tensor &tensor, std::vector<int64_t>& loc_vector, bool first) {
+
+    dbgs() << "[Debug] Writing Tensor Data Chunk \n";
+
     auto memSpace = H5Dget_space(tensorData.dset);
     HDF5_ERROR(memSpace);
     auto &shape = tensorData.shape;
@@ -193,11 +204,14 @@ class HDF5TensorRegionView {
       return;
     }
 
+    dbgs() << "initializeTensorData";
+
     auto hdftype = getHDF5TypeFromApproxType(DType);
     tensorData.hdf_native_type = hdftype;
     tensorData.approx_type = DType;
     tensorData.dset_name = name;
     auto ndim = tensor.dim();
+
     hsize_t dims[ndim + 1];
     hsize_t maxDims[ndim + 1];
     dims[0] = 0;
@@ -208,36 +222,56 @@ class HDF5TensorRegionView {
     }
 
     std::copy(dims, dims + ndim + 1, std::back_inserter(tensorData.shape));
+    if (H5Lexists(this->regionGroup, name.c_str(), H5P_DEFAULT) > 0) {
+      // Open existing dataset
+      hid_t dSetTmp = H5Dopen(this->regionGroup, name.c_str(), H5P_DEFAULT);
+      HDF5_ERROR(dSetTmp);
 
-    hid_t memSpace = H5Screate_simple(ndim + 1, dims, maxDims);
-    HDF5_ERROR(memSpace);
-    tensorData.memSpace = memSpace;
+      // Retrieve current dataspace and extend the first dimension
+      hid_t space = H5Dget_space(dSetTmp);
+      hsize_t current_dims[ndim + 1];
+      HDF5_ERROR(H5Sget_simple_extent_dims(space, current_dims, nullptr));
 
-    hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_layout(pList, H5D_CHUNKED);
-    hsize_t chunk_dims[ndim + 1];
-    chunk_dims[0] = 1;
-    for (int i = 0; i < ndim; i++) {
-      chunk_dims[i + 1] = tensor.size(i);
+
+      // Increase first dimension by 1 (appending new data)
+      current_dims[0] += 1;
+      HDF5_ERROR(H5Dset_extent(dSetTmp, current_dims));
+
+      tensorData.dset = dSetTmp;
+      H5Sclose(space);
+    } else {
+      // Create new dataset
+
+      hid_t memSpace = H5Screate_simple(ndim + 1, dims, maxDims);
+      HDF5_ERROR(memSpace);
+      tensorData.memSpace = memSpace;
+
+      hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
+      H5Pset_layout(pList, H5D_CHUNKED);
+      hsize_t chunk_dims[ndim + 1];
+      chunk_dims[0] = 1;
+      for (int i = 0; i < ndim; i++) {
+	chunk_dims[i + 1] = tensor.size(i);
+      }
+      // max chunk size is 4GB
+      // we may need to reduce the chunk size.
+      // For now, assume it suffices to change chunk_dims[1]
+      // Yes, I know we can do 'size_bytes >> 32'
+      size_t size_bytes = TensorImpl::size_bytes(tensor, DType);
+      size_t reduction_factor = 1 + (size_bytes / (1ULL << 32));
+      chunk_dims[1] /= reduction_factor;
+      H5Pset_chunk(pList, ndim + 1, chunk_dims);
+      hid_t dSetTmp = H5Dcreate(this->regionGroup, name.c_str(), hdftype, memSpace,
+				H5P_DEFAULT, pList, H5P_DEFAULT);
+      HDF5_ERROR(dSetTmp);
+
+      createTypeAttribute(dSetTmp, DType);
+
+      tensorData.dset = dSetTmp;
+
+      H5Pclose(pList);
+      H5Sclose(memSpace);
     }
-    // max chunk size is 4GB
-    // we may need to reduce the chunk size.
-    // For now, assume it suffices to change chunk_dims[1]
-    // Yes, I know we can do 'size_bytes >> 32'
-    size_t size_bytes = TensorImpl::size_bytes(tensor, DType);
-    size_t reduction_factor = 1 + (size_bytes / (1ULL << 32));
-    chunk_dims[1] /= reduction_factor;
-    H5Pset_chunk(pList, ndim + 1, chunk_dims);
-    hid_t dSetTmp = H5Dcreate(this->regionGroup, name.c_str(), hdftype, memSpace,
-                              H5P_DEFAULT, pList, H5P_DEFAULT);
-    HDF5_ERROR(dSetTmp);
-
-    createTypeAttribute(dSetTmp, DType);
-
-    tensorData.dset = dSetTmp;
-
-    H5Pclose(pList);
-    H5Sclose(memSpace);
     tensorData.initialized = true;
   }
 
@@ -246,6 +280,8 @@ class HDF5TensorRegionView {
     if (tensorData.initialized) {
       return;
     }
+
+    dbgs() << "initializeTensorDataChunk";
 
     auto hdftype = getHDF5TypeFromApproxType(DType);
     tensorData.hdf_native_type = hdftype;
@@ -259,36 +295,53 @@ class HDF5TensorRegionView {
     }
 
     auto ndim = tensor_shape.size();
-    hsize_t dims[ndim + 1];
-    hsize_t maxDims[ndim + 1];
-    dims[0] = 0;
-    maxDims[0] = H5S_UNLIMITED;
-    for (int i = 0; i < ndim; i++) {
-      dims[i + 1] = tensor_shape[i];
-      maxDims[i + 1] = tensor_shape[i];
+
+    if (H5Lexists(this->regionGroup, name.c_str(), H5P_DEFAULT) > 0) {
+      // Open existing dataset
+      hid_t dSetTmp = H5Dopen(this->regionGroup, name.c_str(), H5P_DEFAULT);
+      HDF5_ERROR(dSetTmp);
+
+      // Retrieve current dataspace
+      hid_t space = H5Dget_space(dSetTmp);
+      hsize_t current_dims[ndim + 1];
+      HDF5_ERROR(H5Sget_simple_extent_dims(space, current_dims, nullptr));
+      std::copy(current_dims, current_dims + ndim + 1, std::back_inserter(tensorData.shape));
+
+      tensorData.dset = dSetTmp;
+      H5Sclose(space);
+    } else {
+      hsize_t dims[ndim + 1];
+      hsize_t maxDims[ndim + 1];
+      dims[0] = 0;
+      maxDims[0] = H5S_UNLIMITED;
+      for (int i = 0; i < ndim; i++) {
+	dims[i + 1] = tensor_shape[i];
+	maxDims[i + 1] = tensor_shape[i];
+      }
+
+      std::copy(dims, dims + ndim + 1, std::back_inserter(tensorData.shape));
+
+      // Create new dataset
+      hid_t memSpace = H5Screate_simple(ndim + 1, dims, maxDims);
+      HDF5_ERROR(memSpace);
+      tensorData.memSpace = memSpace;
+
+      hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
+      H5Pset_layout(pList, H5D_CHUNKED);
+      hsize_t chunk_dims[ndim + 1];
+      chunk_dims[0] = 1;
+      std::memcpy(&chunk_dims[1], passed_chunk_vector.data(), passed_chunk_vector.size() * sizeof(hsize_t));
+      H5Pset_chunk(pList, ndim + 1, chunk_dims);
+      hid_t dSetTmp = H5Dcreate(this->regionGroup, name.c_str(), hdftype, memSpace,
+				H5P_DEFAULT, pList, H5P_DEFAULT);
+      HDF5_ERROR(dSetTmp);
+      createTypeAttribute(dSetTmp, DType);
+
+      tensorData.dset = dSetTmp;
+      H5Pclose(pList);
+      H5Sclose(memSpace);
     }
 
-    std::copy(dims, dims + ndim + 1, std::back_inserter(tensorData.shape));
-
-    hid_t memSpace = H5Screate_simple(ndim + 1, dims, maxDims);
-    HDF5_ERROR(memSpace);
-    tensorData.memSpace = memSpace;
-
-    hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_layout(pList, H5D_CHUNKED);
-    hsize_t chunk_dims[ndim + 1];
-    chunk_dims[0] = 1;
-    std::memcpy(&chunk_dims[1], passed_chunk_vector.data(), passed_chunk_vector.size() * sizeof(hsize_t));
-    H5Pset_chunk(pList, ndim + 1, chunk_dims);
-    hid_t dSetTmp = H5Dcreate(this->regionGroup, name.c_str(), hdftype, memSpace,
-                              H5P_DEFAULT, pList, H5P_DEFAULT);
-    HDF5_ERROR(dSetTmp);
-    createTypeAttribute(dSetTmp, DType);
-
-    tensorData.dset = dSetTmp;
-
-    H5Pclose(pList);
-    H5Sclose(memSpace);
     tensorData.initialized = true;
   }
 
@@ -299,28 +352,47 @@ class HDF5TensorRegionView {
     RuntimeData.dset_name = "runtime";
     RuntimeData.approx_type = DType;
 
-    hsize_t dims[1];
-    hsize_t maxDims[1];
-    dims[0] = 0;
-    maxDims[0] = H5S_UNLIMITED;
-    RuntimeData.shape.push_back(0);
+    DEBUG_MSG("initializeRuntime()");
 
-    hid_t memSpace = H5Screate_simple(1, dims, maxDims);
-    HDF5_ERROR(memSpace);
-    RuntimeData.memSpace = memSpace;
+    if (H5Lexists(this->regionGroup, RuntimeData.dset_name.c_str(), H5P_DEFAULT) > 0) {
+      // Open existing dataset
+      hid_t dSetTmp = H5Dopen(this->regionGroup, RuntimeData.dset_name.c_str(), H5P_DEFAULT);
+      HDF5_ERROR(dSetTmp);
 
-    hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_layout(pList, H5D_CHUNKED);
-    hsize_t chunk_dims[1] = {1024};
-    H5Pset_chunk(pList, 1, chunk_dims);
+      // Retrieve current dataspace and extend it
+      hid_t space = H5Dget_space(dSetTmp);
+      hsize_t current_dims[1];
+      HDF5_ERROR(H5Sget_simple_extent_dims(space, current_dims, nullptr));
+      RuntimeData.shape.push_back(current_dims[0]);
 
-    hid_t dSetTmp = H5Dcreate(this->regionGroup, RuntimeData.dset_name.c_str(), hdftype, memSpace, H5P_DEFAULT, pList, H5P_DEFAULT);
-    HDF5_ERROR(dSetTmp);
-    createTypeAttribute(dSetTmp, DType);
-    RuntimeData.dset = dSetTmp;
 
-    H5Pclose(pList);
-    H5Sclose(memSpace);
+      RuntimeData.dset = dSetTmp;
+      H5Sclose(space);
+
+    } else {
+      hsize_t dims[1];
+      hsize_t maxDims[1];
+      dims[0] = 0;
+      maxDims[0] = H5S_UNLIMITED;
+      RuntimeData.shape.push_back(0);
+
+      hid_t memSpace = H5Screate_simple(1, dims, maxDims);
+      HDF5_ERROR(memSpace);
+      RuntimeData.memSpace = memSpace;
+
+      hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
+      H5Pset_layout(pList, H5D_CHUNKED);
+      hsize_t chunk_dims[1] = {1024};
+      H5Pset_chunk(pList, 1, chunk_dims);
+
+      hid_t dSetTmp = H5Dcreate(this->regionGroup, RuntimeData.dset_name.c_str(), hdftype, memSpace, H5P_DEFAULT, pList, H5P_DEFAULT);
+      HDF5_ERROR(dSetTmp);
+      createTypeAttribute(dSetTmp, DType);
+      RuntimeData.dset = dSetTmp;
+
+      H5Pclose(pList);
+      H5Sclose(memSpace);
+    }
     RuntimeData.initialized = true;
   }
 
@@ -404,6 +476,7 @@ public:
 
 
   void writeRuntime(float runtime) {
+    dbgs() << "[Debug] writeRuntime \n";
     if (!RuntimeData.initialized) {
       initializeRuntime();
       RuntimeData.initialized = true;
