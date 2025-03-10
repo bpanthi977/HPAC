@@ -18,7 +18,7 @@
 
 #define HDF5_ERROR(id)                                                         \
   if (id < 0) {                                                                \
-    fprintf(stderr, "Error Happened in Line:%s:%d\n", __FILE__, __LINE__);     \
+    fprintf(stderr, "Error Happened in Line: %s:%d:\n", __FILE__, __LINE__);     \
     exit(-1);                                                                  \
   }
 
