@@ -58,25 +58,6 @@ if [ ! -f $clang_bin ]; then
     echo "export CPP=clang++" >> hpac_env.sh
 fi
 
-# if [ ! -f $openmp_lib ]; then
-#   mkdir -p build_openmp
-#   mkdir -p $prefix
-#   pushd build_openmp
-#   cmake -G Ninja \
-#     -DCMAKE_INSTALL_PREFIX=$prefix \
-#     -DLLVM_CCACHE_BUILD='Off'\
-#     -DCMAKE_EXPORT_COMPILE_COMMANDS='On'\
-#     -DCMAKE_BUILD_TYPE='RelWithDebInfo' \
-#     -DCMAKE_C_COMPILER='gcc' \
-#     -DCMAKE_CXX_COMPILER='g++' \
-#     -DBUILD_SHARED_LIBS='On' \
-#     ../openmp
-
-#     ninja -j $threads
-#     ninja -j $threads install
-#     popd
-# fi
-
 if [ ! -f $approx_runtime_lib ]; then
 
   full_path=$(python -c "import torch; print(torch.__file__)")
