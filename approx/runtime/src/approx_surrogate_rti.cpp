@@ -382,6 +382,7 @@ void *__approx_runtime_convert_internal_tensor_to_mem(int nargsLHS,
 void *__approx_runtime_convert_internal_mem_to_tensor(int nargsLHS, void *_slicesLHS, void *_shapesLHS, int nargsRHS, void *_argsRHS) {
 	EventRecorder::GPUEvent TransferEvent = EventRecorder::CreateGPUEvent("To Tensor");
 	TransferEvent.recordStart();
+	dbgs() << "__approx_runtime_convert_internal_mem_to_tensor(" << nargsLHS << ", _, _, " << nargsRHS <<", _)\n";
 
 	internal_repr_metadata_t *metadata = new internal_repr_metadata_t();
 	TensorWrapperMemToTensor<Tensor::tensor_t> Gen;
@@ -390,7 +391,14 @@ void *__approx_runtime_convert_internal_mem_to_tensor(int nargsLHS, void *_slice
 		Tens.perform_indirection();
 	}
 
+	for (auto &rhs_t: RHSTensors) {
+	  dbgs()  << "RHS Tensor Shape: " << rhs_t.sizes() << "\n";
+	}
+
     WrappedTensor LHSTensor = Gen();
+
+    // dbgs() << "LHSTensor Shape: " << LHSTensor.sizes() << "\n";
+
     if (nargsRHS == 1) {
         LHSTensor.add_tensor(RHSTensors[0]);
     } else {

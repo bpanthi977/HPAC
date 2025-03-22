@@ -352,7 +352,7 @@ class HDF5TensorRegionView {
     RuntimeData.dset_name = "runtime";
     RuntimeData.approx_type = DType;
 
-    DEBUG_MSG("initializeRuntime()");
+    dbgs() << "initializeRuntime()";
 
     if (H5Lexists(this->regionGroup, RuntimeData.dset_name.c_str(), H5P_DEFAULT) > 0) {
       // Open existing dataset

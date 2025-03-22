@@ -10,6 +10,7 @@ __global__ void warm_up_gpu() {
 
 namespace approx { namespace util {
     void warmup() {
+      printf("Executing the warm_up_gpu kernel\n");
         warm_up_gpu<<<1, 1>>>();
         cudaDeviceSynchronize();
     }

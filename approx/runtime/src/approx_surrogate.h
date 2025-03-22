@@ -8,6 +8,7 @@
 
 #define NUM_ITEMS 4194304
 #include <string>
+#include <cassert>
 
 #include <torch/script.h>  // One-stop header.
 #include <type_traits>
@@ -315,6 +316,7 @@ private:
   // variables to store the torch model
   // -------------------------------------------------------------------------
   torch::jit::script::Module module;
+  bool module_loaded = false;
   c10::TensorOptions tensorOptions;
 
   template <typename DataType>
@@ -348,12 +350,17 @@ private:
                    at::ScalarType dType)
   {
     try {
+      std::cout << "Loading model " << model_path << "\n";
+      std::cout << "    Device: " << device << " dType: " << dType << "\n";
       module = torch::jit::load(model_path);
       module.to(device);
       module.to(dType);
       module.eval();
+      module_loaded = true;
     } catch (const c10::Error& e) {
-        std::cerr << "error loading the model\n";
+        std::cerr << "Error loading the model" << model_path << "\n";
+	std::cerr << e.what() << "\n";
+	exit(1);
     }
   }
 
@@ -376,6 +383,13 @@ private:
   // -------------------------------------------------------------------------
   // evaluate a torch model
   // -------------------------------------------------------------------------
+  void assert_model() {
+    if (!module_loaded) {
+      std::cerr << "Model is not loaded. Specify correct model by SURROGATE_MODEL env var\n";
+      exit(1);
+    }
+  }
+
   template<typename DataType>
   inline void _evaluate(long num_elements,
                         long num_in,
@@ -383,13 +397,18 @@ private:
                         DataType** inputs,
                         DataType** outputs)
   {
+    #ifdef DEBUG
+    std::cout << "SurrogateModel::_evaluate(" << num_elements << "," << num_in << "," << num_out << ", _, _, " << ")\n";
+    std::cout << __FILE__ << ":" << __LINE__ << "\n";
+    #endif
+
 
     auto input = translator->arrayToTensor(num_elements, num_in, inputs);
     if(translator->isFull())
     {
       input = input.to(ExecutionPolicy::device, true);
       input = translator->prepareForInference(input);
-
+      assert_model();
       at::Tensor output = module.forward({input}).toTensor();
       cudaDeviceSynchronize();
       // tensorToArray(output, num_elements, num_out, outputs);
@@ -408,10 +427,17 @@ private:
                         internal_repr_metadata_t &input,
                         DataType** outputs)
   {
+    #ifdef DEBUG
+    std::cout << "SurrogateModel::_eval_only(" << num_elements << "," << num_in << "," << num_out << ", _, _, " << ")\n";
+    std::cout << __FILE__ << ":" << __LINE__ << "\n";
+    #endif
+
+
       torch::NoGradGuard no_grad;
       auto FPEvent = EventRecorder::CreateGPUEvent("Forward Pass");
       FPEvent.recordStart();
       auto &ipt_tens = input.get_tensor(0);
+      assert_model();
       at::Tensor output = module.forward({ipt_tens}).toTensor();
       FPEvent.recordEnd();
       EventRecorder::LogEvent(FPEvent);
@@ -421,14 +447,19 @@ private:
 
   inline void _eval_only(
    internal_repr_metadata_t &inputs, internal_repr_metadata_t &outputs) {
+    #ifdef DEBUG
+    std::cout << "SurrogateModel::_eval_only(_,_)\n";
+    std::cout << __FILE__ << ":" << __LINE__ << "\n";
+    #endif
+
       auto FPEvent = EventRecorder::CreateGPUEvent("Forward Pass");
       auto FromTens = EventRecorder::CreateGPUEvent("From Tensor");
       auto &ipt_tens = inputs.get_tensor(0);
 
       FPEvent.recordStart();
+      assert_model();
       at::Tensor output = module.forward({ipt_tens}).toTensor();
       FPEvent.recordEnd();
-
 
       FromTens.recordStart();
       outputs.update_to_memory(output);
