@@ -8,6 +8,7 @@
 
 #define NUM_ITEMS 4194304
 #include <string>
+#include <cassert>
 
 #include <torch/script.h>  // One-stop header.
 #include <type_traits>
@@ -315,6 +316,7 @@ private:
   // variables to store the torch model
   // -------------------------------------------------------------------------
   torch::jit::script::Module module;
+  bool module_loaded = false;
   c10::TensorOptions tensorOptions;
 
   template <typename DataType>
@@ -348,12 +350,17 @@ private:
                    at::ScalarType dType)
   {
     try {
+      std::cout << "Loading model " << model_path << "\n";
+      std::cout << "    Device: " << device << " dType: " << dType << "\n";
       module = torch::jit::load(model_path);
       module.to(device);
       module.to(dType);
       module.eval();
+      module_loaded = true;
     } catch (const c10::Error& e) {
-        std::cerr << "error loading the model\n";
+        std::cerr << "Error loading the model" << model_path << "\n";
+	std::cerr << e.what() << "\n";
+	exit(1);
     }
   }
 
@@ -376,6 +383,13 @@ private:
   // -------------------------------------------------------------------------
   // evaluate a torch model
   // -------------------------------------------------------------------------
+  void assert_model() {
+    if (!module_loaded) {
+      std::cerr << "Model is not loaded. Specify correct model by SURROGATE_MODEL env var\n";
+      exit(1);
+    }
+  }
+
   template<typename DataType>
   inline void _evaluate(long num_elements,
                         long num_in,
@@ -390,6 +404,7 @@ private:
       input = input.to(ExecutionPolicy::device, true);
       input = translator->prepareForInference(input);
 
+      assert_model();
       at::Tensor output = module.forward({input}).toTensor();
       cudaDeviceSynchronize();
       // tensorToArray(output, num_elements, num_out, outputs);
@@ -412,6 +427,7 @@ private:
       auto FPEvent = EventRecorder::CreateGPUEvent("Forward Pass");
       FPEvent.recordStart();
       auto &ipt_tens = input.get_tensor(0);
+      assert_model();
       at::Tensor output = module.forward({ipt_tens}).toTensor();
       FPEvent.recordEnd();
       EventRecorder::LogEvent(FPEvent);
@@ -426,6 +442,7 @@ private:
       auto &ipt_tens = inputs.get_tensor(0);
 
       FPEvent.recordStart();
+      assert_model();
       at::Tensor output = module.forward({ipt_tens}).toTensor();
       FPEvent.recordEnd();
 
