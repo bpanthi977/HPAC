@@ -103,6 +103,7 @@ if [ ! -f $approx_runtime_lib ]; then
       -DTorch_DIR=$torch_d \
       -DHDF5_Dir=$hdf5_d \
       -DMKL_THREADING=gnu_thread \
+      -DCMAKE_CUDA_ARCHITECTURES=${gpusm: -2} \
      ../approx
     ninja -j $threads
     ninja -j $threads install
