@@ -33,7 +33,8 @@ void __approx_exec_call(void (*accurateFN)(void *), void (*perfoFN)(void *),
                         void *arg, bool cond, const char *region_name,
                         void *perfoArgs, int memo_type, int petru_type, 
                         int ml_type, void *inputs, int num_inputs, 
-                        void *outputs, int num_outputs);
+                        void *outputs, int num_outputs,
+			char *model_path, char *db_path);
 const float approx_rt_get_percentage();
 const int approx_rt_get_step();
 void __approx_runtime_substitute_aivr_in_shapes(int ndim, void *_slices, void *_shapes);

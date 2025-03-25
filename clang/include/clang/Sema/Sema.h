@@ -11408,6 +11408,8 @@ public:
   ApproxClause* ActOnApproxMLClause(approx::ClauseKind Kind,
                                       approx::MLType MType,
                                       approx::ApproxVarListLocTy &Locs);
+  ApproxClause* ActOnApproxModelPathClause(approx::ClauseKind Kind, approx::ApproxVarListLocTy &Locs, Expr *Step);
+  ApproxClause* ActOnApproxDBPathClause(approx::ClauseKind Kind, approx::ApproxVarListLocTy &Locs, Expr *Step);
   ApproxClause* ActOnApproxDTClause(approx::ClauseKind Kind, approx::ApproxVarListLocTy &Locs);
   ApproxDeclareTensorFunctorDecl *ActOnApproxTFDecl(
       approx::DeclKind Kind, Scope *S, IdentifierInfo *TensorName, Expr *LHSSlice,

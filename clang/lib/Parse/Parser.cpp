@@ -508,6 +508,8 @@ void Parser::Initialize() {
     ParseApproxClause[CK_LABEL] = &Parser::ParseApproxLabelClause;
     ParseApproxClause[CK_PETRUBATE] = &Parser::ParseApproxPetrubateClause;
     ParseApproxClause[CK_ML] = &Parser::ParseApproxMLClause;
+    ParseApproxClause[CK_MODEL_PATH] = &Parser::ParseApproxModelPathClause;
+    ParseApproxClause[CK_DB_PATH] = &Parser::ParseApproxDBPathClause;
   }
 
   Ident_instancetype = nullptr;

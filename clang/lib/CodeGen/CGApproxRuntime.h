@@ -46,6 +46,8 @@ enum ApproxRTArgsIndex : uint {
   DataSizeIn,
   DataDescOut,
   DataSizeOut,
+  ModelPath,
+  DBPath,
   ARG_END
 };
 
@@ -127,6 +129,8 @@ public:
                                    ApproxPetrubateClause &PetrubateClause);
   void CGApproxRuntimeEmitMLInit( CodeGenFunction &CGF, 
                                   ApproxMLClause &MLClause);
+  void CGApproxRuntimeEmitModelPathInit(CodeGenFunction &CGF, ApproxModelPathClause &ModelPathClause);
+  void CGApproxRuntimeEmitDBPathInit(CodeGenFunction &CGF, ApproxDBPathClause &DBPathClause);
   void CGApproxRuntimeEmitDeclInit(CodeGenFunction &CGF,
                                    ApproxDeclClause &DeclClause);
   void CGApproxRuntimeEmitIfInit(CodeGenFunction &CGF,

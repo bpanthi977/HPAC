@@ -46,6 +46,8 @@ enum ClauseKind : uint {
   CK_LABEL,
   CK_PETRUBATE,
   CK_ML,
+  CK_MODEL_PATH,
+  CK_DB_PATH,
   CK_END
 };
 
