@@ -72,8 +72,8 @@ if [ ! -f $approx_runtime_lib ]; then
   gpuarch=$(echo $gpuarchsm | cut -d ';' -f 1)
   gpusm=$(echo $gpuarchsm | cut -d ';' -f 2)
 
-  echo "export HPAC_GPU_ARCH=$gpuarch" >> hpac_env.sh
-  echo "export HPAC_GPU_SM=$gpusm" >> hpac_env.sh
+  # echo "export HPAC_GPU_ARCH=$gpuarch" >> hpac_env.sh
+  # echo "export HPAC_GPU_SM=$gpusm" >> hpac_env.sh
 
   if [ ! $? -eq 0 ]; then
 
@@ -98,7 +98,7 @@ if [ ! -f $approx_runtime_lib ]; then
       -DCMAKE_EXPORT_COMPILE_COMMANDS='On'\
       -DCMAKE_C_COMPILER=`which clang` \
       -DCMAKE_CXX_COMPILER=`which clang++` \
-    -DCMAKE_BUILD_TYPE='RelWithDebInfo' \
+    -DCMAKE_BUILD_TYPE='Debug' \
     -DCAFFE2_USE_CUDNN='On' \
       -DTorch_DIR=$torch_d \
       -DHDF5_Dir=$hdf5_d \
