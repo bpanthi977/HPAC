@@ -127,6 +127,74 @@ class ApproxLabelClause final: public ApproxClause{
   Stmt *getPreInit() { return PreInit; }
 };
 
+class ApproxModelPathClause final: public ApproxClause{
+  SourceLocation LParenLoc;
+  Stmt *Path = nullptr;
+  Stmt *PreInit = nullptr;
+
+  public:
+  ApproxModelPathClause(SourceLocation StartLoc, SourceLocation EndLoc, SourceLocation LParenLoc, Stmt *PreInit, Expr *Path) :
+  ApproxClause(approx::CK_MODEL_PATH, StartLoc, EndLoc), LParenLoc(LParenLoc), Path(Path), PreInit(PreInit){}
+
+  child_range children() {
+    return child_range(child_iterator(), child_iterator());
+  }
+
+  const_child_range children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
+  }
+
+  child_range used_children() {
+    return child_range(child_iterator(), child_iterator());
+  }
+  const_child_range used_children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
+  }
+
+  static bool classof(const ApproxClause *T) {
+    return T->getClauseKind() == approx::CK_MODEL_PATH;
+  }
+
+  Expr* getPath() {return cast_or_null<Expr>(Path);}
+
+  const Stmt *getPreInit() const { return PreInit; }
+  Stmt *getPreInit() { return PreInit; }
+};
+
+class ApproxDBPathClause final: public ApproxClause{
+  SourceLocation LParenLoc;
+  Stmt *Path = nullptr;
+  Stmt *PreInit = nullptr;
+
+  public:
+  ApproxDBPathClause(SourceLocation StartLoc, SourceLocation EndLoc, SourceLocation LParenLoc, Stmt *PreInit, Expr *Path) :
+  ApproxClause(approx::CK_DB_PATH, StartLoc, EndLoc), LParenLoc(LParenLoc), Path(Path), PreInit(PreInit){}
+
+  child_range children() {
+    return child_range(child_iterator(), child_iterator());
+  }
+
+  const_child_range children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
+  }
+
+  child_range used_children() {
+    return child_range(child_iterator(), child_iterator());
+  }
+  const_child_range used_children() const {
+    return const_child_range(const_child_iterator(), const_child_iterator());
+  }
+
+  static bool classof(const ApproxClause *T) {
+    return T->getClauseKind() == approx::CK_DB_PATH;
+  }
+
+  Expr* getPath() {return cast_or_null<Expr>(Path);}
+
+  const Stmt *getPreInit() const { return PreInit; }
+  Stmt *getPreInit() { return PreInit; }
+}; 
+
 class ApproxPerfoClause final : public ApproxClause {
   approx::PerfoType Type;
   SourceLocation LParenLoc;
@@ -648,6 +716,8 @@ class ApproxClauseVisitorBase{
   RetTy VisitApproxPerfoClause(PTR(ApproxPerfoClause) S) {DISPATCH(ApproxPerfoClause);}
   RetTy VisitApproxMemoClause(PTR(ApproxMemoClause) S) {DISPATCH(ApproxMemoClause);}
   RetTy VisitApproxMLClause(PTR(ApproxMLClause) S) {DISPATCH(ApproxMLClause);}
+  RetTy VisitApproxModelPathClause(PTR(ApproxModelPathClause) S) {DISPATCH(ApproxModelPathClause);}
+  RetTy VisitApproxDBPathClause(PTR(ApproxDBPathClause) S) {DISPATCH(ApproxDBPathClause);}
   RetTy VisitApproxDTClause(PTR(ApproxDTClause) S) {DISPATCH(ApproxDTClause);}
   RetTy VisitApproxNNClause(PTR(ApproxNNClause) S) {DISPATCH(ApproxNNClause);}
   RetTy VisitApproxUserClause(PTR(ApproxUserClause) S) {DISPATCH(ApproxUserClause);}
@@ -666,6 +736,10 @@ class ApproxClauseVisitorBase{
         return VisitApproxMemoClause(static_cast<PTR(ApproxMemoClause)>(S));
       case approx::CK_ML:
         return VisitApproxMLClause(static_cast<PTR(ApproxMLClause)>(S));
+     case approx::CK_MODEL_PATH:
+        return VisitApproxModelPathClause(static_cast<PTR(ApproxModelPathClause)>(S));
+     case approx::CK_DB_PATH:
+        return VisitApproxDBPathClause(static_cast<PTR(ApproxDBPathClause)>(S));
       case approx::CK_DT:
         return VisitApproxDTClause(static_cast<PTR(ApproxDTClause)>(S));
       case approx::CK_NN:
@@ -717,6 +791,8 @@ class ApproxClausePrinter final : public ApproxClauseVisitor<ApproxClausePrinter
     void VisitApproxPerfoClause(ApproxPerfoClause *S);
     void VisitApproxMemoClause(ApproxMemoClause *S);
     void VisitApproxMLClause(ApproxMLClause *S);
+    void VisitApproxModelPathClause(ApproxModelPathClause *S);
+    void VisitApproxDBPathClause(ApproxDBPathClause *S);
     void VisitApproxDTClause(ApproxDTClause *S);
     void VisitApproxNNClause(ApproxNNClause *S);
     void VisitApproxTensorFunctorDecl(ApproxDeclareTensorFunctorDecl *S);

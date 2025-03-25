@@ -3397,7 +3397,7 @@ private:
   /// Parses simple list of variables.
   ///
   /// \param Kind Kind of the directive.
-  /// \param Callback Callback function to be called for the list elements.
+  /// \param Callback Callback function to bpe called for the list elements.
   /// \param AllowScopeSpecifier true, if the variables can have fully
   /// qualified names.
   ///
@@ -3509,6 +3509,8 @@ private:
   ParseApproxClauseFn ParseApproxPerfoClause;
   ParseApproxClauseFn ParseApproxMemoClause;
   ParseApproxClauseFn ParseApproxMLClause;
+  ParseApproxClauseFn ParseApproxModelPathClause;
+  ParseApproxClauseFn ParseApproxDBPathClause;
   ParseApproxClauseFn ParseApproxPetrubateClause;
   ParseApproxClauseFn ParseApproxDTClause;
   ParseApproxClauseFn ParseApproxNNClause;

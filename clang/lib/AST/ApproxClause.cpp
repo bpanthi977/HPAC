@@ -22,7 +22,7 @@ using namespace approx;
 using namespace llvm;
 
 const std::string ApproxClause::Name[approx::CK_END] = {
-    "perfo", "memo", "dt", "nn", "user", "if", "in", "out", "inout", "label", "petrubate", "ml"};
+    "perfo", "memo", "dt", "nn", "user", "if", "in", "out", "inout", "label", "petrubate", "ml", "model", "db"};
 
 const std::string ApproxDecl::Name[approx::DK_END] = {
     "tensor_functor", "tensor"};
@@ -182,3 +182,18 @@ void ApproxClausePrinter::VisitApproxLabelClause(ApproxLabelClause *Node){
   Node->getLabel()->printPretty(OS,nullptr, Policy, 0);
   OS << ")";
 }
+
+void ApproxClausePrinter::VisitApproxModelPathClause(ApproxModelPathClause *Node){
+  OS << Node->getAsString();
+  OS << "(";
+  Node->getPath()->printPretty(OS,nullptr, Policy, 0);
+  OS << ")";
+}
+
+void ApproxClausePrinter::VisitApproxDBPathClause(ApproxDBPathClause *Node){
+  OS << Node->getAsString();
+  OS << "(";
+  Node->getPath()->printPretty(OS,nullptr, Policy, 0);
+  OS << ")";
+}
+

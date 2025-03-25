@@ -242,18 +242,25 @@ HDF5RegionView::HDF5RegionView(uintptr_t rAddr, const char *name, hid_t file,
 }
 
 HDF5RegionView::~HDF5RegionView() {
+  std::cout << "~HDF5RegionView" << "\n";
   H5Sclose(memSpace);
   H5Dclose(dset);
   H5Gclose(group);
 }
 
 HDF5TensorRegionView::~HDF5TensorRegionView() {
+  std::cout << "~HDF5TensorRegionView" << "\n";
   H5Gclose(regionGroup);
 }
 
 HDF5DB::HDF5DB(const char *fileName) {
+  std::cout << " new HDF5DB(" << fileName << ")\n";
   file = openHDF5File(fileName);
   HDF5_ERROR(file);
+  std::cout << "File opened: " << file << "\n";
+  H5Fclose(file);
+  file = openHDF5File(fileName);
+  std::cout << "File again opened: " << file << "\n";
 }
 
 void *HDF5DB::InstantiateRegion(uintptr_t addr, const char *name) {
@@ -264,6 +271,7 @@ void *HDF5DB::InstantiateRegion(uintptr_t addr, const char *name) {
     }
   }
   uintptr_t index = reinterpret_cast<uintptr_t>(regions.size());
+  std::cout << "HDF5DB->regions.push_back(" << addr << " " << name << " " << file << ")\n";
   regions.push_back(new HDF5TensorRegionView(addr, name, file));
   return reinterpret_cast<void *>(index);
 }
@@ -280,7 +288,8 @@ void HDF5DB::DataToDB(void *region, double *data, size_t numRows, int numCols) {
 }
 
 HDF5DB::~HDF5DB() {
-  for (auto &it : regions)
+  std::cout << "~HDF5DB " << file << "\n";
+  for (auto &it : regions) 
     delete it;
 
   H5Fclose(file);

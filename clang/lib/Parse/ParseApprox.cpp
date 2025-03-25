@@ -218,6 +218,46 @@ ApproxClause *Parser::ParseApproxMLClause(ClauseKind CK) {
   return Actions.ActOnApproxMLClause(CK, MT, Locs);
 }
 
+ApproxClause *Parser::ParseApproxModelPathClause(ClauseKind CK) {
+  SourceLocation Loc = Tok.getLocation();
+  SourceLocation LParenLoc = ConsumeAnyToken();
+  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_approx_end);
+  if (T.expectAndConsume(diag::err_expected_lparen_after, ApproxClause::Name[CK].c_str()))
+    return nullptr;
+
+  SourceLocation ExprLoc = Tok.getLocation();
+  ExprResult Val(ParseExpression());
+  Val = Actions.ActOnFinishFullExpr(Val.get(), ExprLoc, false);
+
+  SourceLocation ELoc = Tok.getLocation();
+  if (!T.consumeClose())
+    ELoc = T.getCloseLocation();
+
+  ApproxVarListLocTy Locs(Loc, LParenLoc, ELoc);
+
+  return Actions.ActOnApproxModelPathClause(CK, Locs, Val.get());
+}
+
+ApproxClause *Parser::ParseApproxDBPathClause(ClauseKind CK) {
+  SourceLocation Loc = Tok.getLocation();
+  SourceLocation LParenLoc = ConsumeAnyToken();
+  BalancedDelimiterTracker T(*this, tok::l_paren, tok::annot_pragma_approx_end);
+  if (T.expectAndConsume(diag::err_expected_lparen_after, ApproxClause::Name[CK].c_str()))
+    return nullptr;
+
+  SourceLocation ExprLoc = Tok.getLocation();
+  ExprResult Val(ParseExpression());
+  Val = Actions.ActOnFinishFullExpr(Val.get(), ExprLoc, false);
+
+  SourceLocation ELoc = Tok.getLocation();
+  if (!T.consumeClose())
+    ELoc = T.getCloseLocation();
+
+  ApproxVarListLocTy Locs(Loc, LParenLoc, ELoc);
+
+  return Actions.ActOnApproxDBPathClause(CK, Locs, Val.get());
+}
+
 //These claues are not used a.t.m
 ApproxClause *Parser::ParseApproxDTClause(ClauseKind CK) {
   SourceLocation Loc = Tok.getLocation();

@@ -81,8 +81,10 @@ public:
   int64_t iptChunkSize;
   int64_t optChunkSize;
   vector<int64_t> tensorShape;
-  BaseDB *db;
-  SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double> Model{"", false};
+  BaseDB *DefaultDB = NULL;
+  std::unordered_map<std::string, BaseDB*> DBs;
+  SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double> DefaultModel = {"", false};
+  std::unordered_map<std::string, SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double>*> Models;
 
 
   ApproxRuntimeConfiguration() {
@@ -96,14 +98,12 @@ public:
 
     env_p = std::getenv("HPAC_DB_FILE");
     if (env_p) {
-      db = new HDF5DB(env_p);
-    } else {
-      db = new HDF5DB("test.h5");
+      DefaultDB = new HDF5DB(env_p);
     }
 
     env_p = std::getenv("SURROGATE_MODEL");
     if (env_p) {
-      Model.set_model(env_p);
+      DefaultModel.set_model(env_p);
     }
 
     env_p = std::getenv("EXECUTE_MODE");
@@ -219,13 +219,57 @@ public:
 
   ~ApproxRuntimeConfiguration(){
     delete [] randomNumbers;
-    delete db;
+
+    if (DefaultDB != NULL) {
+      std::cout <<" Destructor on DefaultDB \n";
+      delete DefaultDB;
+    }
+
+    for (auto& pair : DBs) {
+      std::cout <<" Destructor on DBs[" << pair.first << "\n";
+        delete pair.second;
+    }
+    DBs.clear();
     deinitPetrubate();
   }
 
   ExecuteMode getMode(){return Mode;}
 
   bool getExecuteBoth(){ return ExecuteBoth; }
+
+  SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double> *getModel(const char *_model_path) {
+    if (_model_path == NULL) {
+      return &DefaultModel;
+    }
+    std::string model_path(_model_path);
+    auto it = Models.find(model_path);
+    if (it != Models.end()) {
+      return it->second;
+    } else {
+      auto model = new SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double>(std::move(model_path), false);
+      Models[model_path] = model;
+      return model;
+    }
+  }
+
+  BaseDB *getDB(const char *_db_path) {
+    if (_db_path == NULL) {
+      if (DefaultDB == NULL) {
+	DefaultDB = new HDF5DB("test.h5");
+      }
+      return DefaultDB;
+    } else {
+      std::string db_path(_db_path);
+      auto it = DBs.find(db_path);
+      if (it != DBs.end()) {
+	return it->second;
+      } else {
+	auto db = new HDF5DB(_db_path);
+	DBs[db_path] = db;
+	return db;
+      }
+    }
+  }
 
 };
 
@@ -335,6 +379,8 @@ struct ml_argdesc_t {
   approx_var_info_t *output_vars;
   std::vector<void *> ipts;
   std::vector<void *> opts;
+  const char *model_path;
+  const char *db_path;
 };
 
 void ml_infer(ml_argdesc_t &arg) {
@@ -343,7 +389,7 @@ void ml_infer(ml_argdesc_t &arg) {
 
   switch(arg.have_tensors) {
     case TensorsFound::NONE:
-      RTEnv.Model.evaluate(static_cast<ApproxType>(arg.input_vars[0].data_type),
+      RTEnv.getModel(arg.model_path)->evaluate(static_cast<ApproxType>(arg.input_vars[0].data_type),
                            arg.input_vars[0].num_elem, arg.ipts, arg.opts);
       break;
     case TensorsFound::INPUT:
@@ -362,7 +408,7 @@ void ml_infer(ml_argdesc_t &arg) {
     case TensorsFound::BOTH:
       ipt_metadata = static_cast<internal_repr_metadata_t *>(arg.input_vars[0].ptr);
       opt_metadata = static_cast<internal_repr_metadata_t *>(arg.output_vars[0].ptr);
-      RTEnv.Model.evaluate(static_cast<ApproxType>(arg.input_vars[0].data_type),
+      RTEnv.getModel(arg.model_path)->evaluate(static_cast<ApproxType>(arg.input_vars[0].data_type),
                            *ipt_metadata, *opt_metadata);
       break;
   }
@@ -488,8 +534,9 @@ void pipelined_device_to_disk_sync(ml_argdesc_t &arg, internal_repr_metadata_t &
     size_t ipt_num_chunks = get_chunk_shape(ipt_total_shape, iptType, ipt_chunk_vector, chunkSize); 
     TensorImpl::Shape ipt_chunk_shape = TensorImpl::shapeFromVector(ipt_chunk_vector);
 
-    auto region_addr = RTEnv.db->InstantiateRegion((uintptr_t) arg.accurateFN, arg.region_name);
-    HDF5DB *db = static_cast<HDF5DB *>(RTEnv.db);
+    HDF5DB *db = static_cast<HDF5DB *>(RTEnv.getDB(arg.db_path));
+    auto region_addr = db->InstantiateRegion((uintptr_t) arg.accurateFN, arg.region_name);
+
     
 	if(!isInput) {
         comp.recordStart();
@@ -541,20 +588,20 @@ void ml_offline_train(ml_argdesc_t &arg) {
 
   switch(arg.have_tensors) {
     case TensorsFound::NONE:
-      RTEnv.Model.evaluate(static_cast<ApproxType>(arg.input_vars[0].data_type),
+      RTEnv.getModel(arg.model_path)->evaluate(static_cast<ApproxType>(arg.input_vars[0].data_type),
                            arg.input_vars[0].num_elem, arg.ipts, arg.opts);
       break;
     case TensorsFound::INPUT:
       std::cerr << "Input only not supported yet\n";
       arg.accurateFN(arg.accurateFN_arg);
       // ipt_metadata = static_cast<internal_repr_metadata_t *>(input_vars[0].ptr);
-      // RTEnv.Model.evaluate(static_cast<ApproxType>(input_vars[0].data_type),
+      // RTEnv.getModel(arg.model_path)->evaluate(static_cast<ApproxType>(input_vars[0].data_type),
                           //  input_vars[0].num_elem, ipt_metadata->Tensors[0], opts);
       break;
     case TensorsFound::OUTPUT:
       std::cerr << "Output only not supported yet\n";
       arg.accurateFN(arg.accurateFN_arg);
-      // RTEnv.Model.evaluate(static_cast<ApproxType>(output_vars[0].data_type),
+      // RTEnv.getModel(arg.model_path)->evaluate(static_cast<ApproxType>(output_vars[0].data_type),
                           //  output_vars[0].num_elem, ipts, opts);
       break;
     case TensorsFound::BOTH:
@@ -576,7 +623,8 @@ void ml_offline_train(ml_argdesc_t &arg) {
 
 void ml_invoke(MLType type, void (*accurateFN)(void *), void *arg,
                const char *region_name, void *inputs, int num_inputs,
-               void *outputs, int num_outputs) {
+               void *outputs, int num_outputs, 
+	       const char *model_path, const char *db_path) {
   approx_var_info_t *input_vars = (approx_var_info_t *)inputs;
   approx_var_info_t *output_vars = (approx_var_info_t *)outputs;
 
@@ -614,7 +662,7 @@ void ml_invoke(MLType type, void (*accurateFN)(void *), void *arg,
     }
 
     ml_argdesc_t ml_arg = {accurateFN, arg, region_name, have_tensors,
-                           input_vars, output_vars, ipts, opts};
+                           input_vars, output_vars, ipts, opts, model_path, db_path};
 
   if(type == ML_INFER) {
     ml_infer(ml_arg);
@@ -633,7 +681,8 @@ void __approx_exec_call(void (*accurateFN)(void *), void (*perfoFN)(void *),
                         void *arg, bool cond, const char *region_name,
                         void *perfoArgs, int memo_type, int petru_type,
                         int ml_type, void *inputs,
-                        int num_inputs, void *outputs, int num_outputs) {
+                        int num_inputs, void *outputs, int num_outputs,
+			char *model_path, char *db_path) {
   approx_perfo_info_t *perfo = (approx_perfo_info_t *)perfoArgs;
   approx_var_info_t *input_vars = (approx_var_info_t *)inputs;
   approx_var_info_t *output_vars = (approx_var_info_t *)outputs;
@@ -653,7 +702,13 @@ void __approx_exec_call(void (*accurateFN)(void *), void (*perfoFN)(void *),
     memoize_out(accurateFN, arg, output_vars, num_outputs);
   } 
   else if (is_ml((MLType) ml_type)){
-    ml_invoke((MLType) ml_type, accurateFN, arg, region_name, inputs, num_inputs, outputs, num_outputs);
+    std::cout << "__approx_exec_call MLType.\n";
+    if (model_path != NULL)
+      std::cout << "   model_path=" << model_path << "\n";
+    if (db_path != NULL)
+      std::cout << "   db_path=" << db_path << "\n";
+    
+    ml_invoke((MLType) ml_type, accurateFN, arg, region_name, inputs, num_inputs, outputs, num_outputs, model_path, db_path);
   } else if(petru_type & PETRUBATE_OUT){
     petrubate(accurateFN, output_vars, num_outputs, region_name);
   } else {

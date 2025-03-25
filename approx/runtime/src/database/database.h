@@ -86,6 +86,7 @@ class HDF5TensorRegionView {
 
     bool isInitialized() const { return initialized; }
     ~TensorData() {
+      std::cout << "~TensorRegionView::TensorData" << dset_name << "\n";
       if (initialized) {
         auto errcode = H5Dclose(dset);
         HDF5_ERROR(errcode);
@@ -549,6 +550,8 @@ class HDF5DB : public BaseDB {
 public:
   HDF5DB(const char *fileName);
   ~HDF5DB();
+  HDF5DB(const  HDF5DB &) = delete;
+  HDF5DB& operator=(const HDF5DB &) = delete;
 
   void *InstantiateRegion(uintptr_t Addr, const char *Name) final;
 

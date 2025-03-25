@@ -2210,6 +2210,34 @@ ApproxClause *Sema::ActOnApproxMLClause(ClauseKind Kind,
   return new (Context) ApproxMLClause(MType, StartLoc, EndLoc, LParenLoc);
 }
 
+ApproxClause *Sema::ActOnApproxModelPathClause(ClauseKind Kind, ApproxVarListLocTy &Locs, Expr *path){
+  SourceLocation StartLoc = Locs.StartLoc;
+  SourceLocation LParenLoc =Locs.LParenLoc;
+  SourceLocation EndLoc = Locs.EndLoc;
+  Expr *pathExpr = path;
+  Stmt *PreInitStmt;
+
+  pathExpr = MakeFullExpr(pathExpr).get();
+  llvm::MapVector<const Expr *, DeclRefExpr *> Captures;
+  tryBuildCapture(*this, pathExpr, Captures);
+  PreInitStmt = buildPreInits(Context, Captures);
+  return new (Context) ApproxModelPathClause(StartLoc, EndLoc, LParenLoc, PreInitStmt, path);
+}
+
+ApproxClause *Sema::ActOnApproxDBPathClause(ClauseKind Kind, ApproxVarListLocTy &Locs, Expr *path){
+  SourceLocation StartLoc = Locs.StartLoc;
+  SourceLocation LParenLoc =Locs.LParenLoc;
+  SourceLocation EndLoc = Locs.EndLoc;
+  Expr *pathExpr = path;
+  Stmt *PreInitStmt;
+
+  pathExpr = MakeFullExpr(pathExpr).get();
+  llvm::MapVector<const Expr *, DeclRefExpr *> Captures;
+  tryBuildCapture(*this, pathExpr, Captures);
+  PreInitStmt = buildPreInits(Context, Captures);
+  return new (Context) ApproxDBPathClause(StartLoc, EndLoc, LParenLoc, PreInitStmt, path);
+} 
+
 ApproxClause *Sema::ActOnApproxMemoClause(ClauseKind Kind,
                                           MemoType MType,
                                           ApproxVarListLocTy &Locs) {

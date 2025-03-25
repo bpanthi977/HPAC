@@ -22,6 +22,7 @@
 #include "llvm/Support/Debug.h"
 #include <unordered_map>
 #include <memory>
+#include <iostream>
 
 using namespace llvm;
 using namespace clang;
@@ -357,7 +358,9 @@ CGApproxRuntime::CGApproxRuntime(CodeGenModule &CGM)
        /* Input Data Descr*/ CGM.VoidPtrTy,
        /* Input Data Num Elements*/ CGM.Int32Ty,
        /* Ouput Data Descr. */ CGM.VoidPtrTy,
-       /* Output Data Num Elements*/ CGM.Int32Ty},
+       /* Output Data Num Elements*/ CGM.Int32Ty,
+       /* Model Path */ CharPtrTy,
+       /* DB Path */ CharPtrTy},
       false);
 
   SurrogateInfo.ConvertSliceInfoFnTy = llvm::FunctionType::get(
@@ -451,6 +454,8 @@ void CGApproxRuntime::CGApproxRuntimeEnterRegion(CodeGenFunction &CGF,
       llvm::ConstantInt::get(CGF.Builder.getInt32Ty(), 0);
   approxRTParams[MLDescr] =
       llvm::ConstantInt::get(CGF.Builder.getInt32Ty(), 0);
+  approxRTParams[ModelPath] = llvm::ConstantPointerNull::get(CharPtrTy);
+  approxRTParams[DBPath] = llvm::ConstantPointerNull::get(CharPtrTy);
 
   StartLoc = CS.getBeginLoc();
   EndLoc = CS.getEndLoc();
@@ -790,6 +795,7 @@ void CGApproxRuntime::CGApproxRuntimeExitRegion(CodeGenFunction &CGF) {
   StringRef RTFnName("__approx_exec_call");
   RTFn = CGM.getModule().getFunction(RTFnName);
 
+  std::cout << "<ApproxRuntimeExitRegion>\n";
   assert(RTFnTy != nullptr);
   if (!RTFn)
     RTFn = Function::Create(RTFnTy, GlobalValue::ExternalLinkage, RTFnName,
@@ -797,6 +803,8 @@ void CGApproxRuntime::CGApproxRuntimeExitRegion(CodeGenFunction &CGF) {
 
   llvm::FunctionCallee RTFnCallee({RTFnTy, RTFn});
   CGF.EmitRuntimeCall(RTFnCallee, ArrayRef<llvm::Value *>(approxRTParams));
+  std::cout << "   Model_Path='"  << approxRTParams[ModelPath] << "' DB_Path='" << approxRTParams[DBPath] << "'\n";
+  std::cout << "</ApproxRuntimeExitRegion>\n";
 }
 
 void CGApproxRuntime::CGApproxRuntimeRegisterInputs(ApproxInClause &InClause) {
@@ -1377,6 +1385,7 @@ void CGApproxRuntime::CGApproxRuntimeEmitDataValues(CodeGenFunction &CGF) {
 
 void CGApproxRuntime::CGApproxRuntimeEmitLabelInit(
     CodeGenFunction &CGF, ApproxLabelClause &LabelClause) {
+  std::cout << "ApproxRuntimeEmitLabelInit\n";
   ASTContext &C = CGM.getContext();
   CodeGen::CodeGenTypes &Types = CGM.getTypes();
   llvm::PointerType *CharPtrTy =
@@ -1394,6 +1403,53 @@ void CGApproxRuntime::CGApproxRuntimeEmitLabelInit(
   Addr = CGF.Builder.CreatePointerCast(Addr, CharPtrTy);
   approxRTParams[Label] = Addr;
 }
+
+
+void CGApproxRuntime::CGApproxRuntimeEmitModelPathInit(
+    CodeGenFunction &CGF, ApproxModelPathClause &ModelClause) {
+  std::cout << "ApproxRuntimeEmitModelPathInit\n";
+
+  ASTContext &C = CGM.getContext();
+  CodeGen::CodeGenTypes &Types = CGM.getTypes();
+  llvm::PointerType *CharPtrTy =
+      llvm::PointerType::getUnqual(Types.ConvertType(C.CharTy));
+
+  LValue path;
+  llvm::Value *Addr;
+  if (StringLiteral *LiteralExpr = dyn_cast_or_null<StringLiteral>(ModelClause.getPath())) {
+      path =
+          CGF.EmitStringLiteralLValue(cast<StringLiteral>(ModelClause.getPath()));
+      std::cout << " StringLiteral path='" << ModelClause.getPath() << "'\n";
+    Addr = path.getPointer(CGF);
+  }else{
+    Addr = CGF.EmitLValue(ModelClause.getPath()).getPointer(CGF);
+    std::cout << " LValue path='" << ModelClause.getPath() << "'\n";
+  }
+  Addr = CGF.Builder.CreatePointerCast(Addr, CharPtrTy);
+  std::cout << " Addr='" << Addr << "'\n";
+
+  approxRTParams[ModelPath] = Addr;
+}
+
+void CGApproxRuntime::CGApproxRuntimeEmitDBPathInit(
+    CodeGenFunction &CGF, ApproxDBPathClause &DBClause) {
+  ASTContext &C = CGM.getContext();
+  CodeGen::CodeGenTypes &Types = CGM.getTypes();
+  llvm::PointerType *CharPtrTy =
+      llvm::PointerType::getUnqual(Types.ConvertType(C.CharTy));
+
+  LValue path;
+  llvm::Value *Addr;
+  if (StringLiteral *LiteralExpr = dyn_cast_or_null<StringLiteral>(DBClause.getPath())) {
+      path =
+          CGF.EmitStringLiteralLValue(cast<StringLiteral>(DBClause.getPath()));
+    Addr = path.getPointer(CGF);
+  }else{
+    Addr = CGF.EmitLValue(DBClause.getPath()).getPointer(CGF);
+  }
+  Addr = CGF.Builder.CreatePointerCast(Addr, CharPtrTy);
+  approxRTParams[DBPath] = Addr;
+} 
 
 void CGApproxRuntime::CGApproxRuntimeEmitMLInit(
     CodeGenFunction &CGF, ApproxMLClause &MLClause) {
