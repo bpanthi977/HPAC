@@ -257,10 +257,6 @@ HDF5DB::HDF5DB(const char *fileName) {
   std::cout << " new HDF5DB(" << fileName << ")\n";
   file = openHDF5File(fileName);
   HDF5_ERROR(file);
-  std::cout << "File opened: " << file << "\n";
-  H5Fclose(file);
-  file = openHDF5File(fileName);
-  std::cout << "File again opened: " << file << "\n";
 }
 
 void *HDF5DB::InstantiateRegion(uintptr_t addr, const char *name) {
