@@ -80,7 +80,7 @@ class HDF5TensorRegionView {
 
     bool isInitialized() const { return initialized; }
     ~TensorData() {
-      std::cout << "~TensorRegionView::TensorData" << dset_name << "\n";
+      std::cout << "~TensorRegionView::TensorData close(dset)" << dset << dset_name << "\n";
       if (initialized) {
         auto errcode = H5Dclose(dset);
         HDF5_ERROR(errcode);
@@ -140,9 +140,12 @@ class HDF5TensorRegionView {
     HDF5_ERROR(errcode);
 
     // Close resources
-    H5Sclose(fileSpace);
-    H5Sclose(memSpace);
-    H5Sclose(newMemSpace);
+    std::cout << "close(fileSpace, memSpace, newMemspace)" << fileSpace << " " << memSpace  << " " << newMemSpace << "\n";
+    HDF5_ERROR(H5Sclose(fileSpace));
+    HDF5_ERROR(H5Sclose(memSpace));
+    HDF5_ERROR(H5Sclose(newMemSpace));
+
+
   }
 
   template<typename Tensor>
@@ -181,9 +184,10 @@ class HDF5TensorRegionView {
     HDF5_ERROR(errcode);
 
     // Close resources
-    H5Sclose(fileSpace);
-    H5Sclose(memSpace);
-    H5Sclose(newMemSpace);
+    std::cout << "close(fileSpace, memSpace, newMemspace)" << fileSpace << " " << memSpace  << " " << newMemSpace << "\n";
+    HDF5_ERROR(H5Sclose(fileSpace));
+    HDF5_ERROR(H5Sclose(memSpace));
+    HDF5_ERROR(H5Sclose(newMemSpace));
   }
 
 
@@ -215,6 +219,7 @@ class HDF5TensorRegionView {
     tensorData.memSpace = memSpace;
 
     hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
+    HDF5_ERROR(pList);
     H5Pset_layout(pList, H5D_CHUNKED);
     hsize_t chunk_dims[ndim + 1];
     chunk_dims[0] = 1;
@@ -237,8 +242,9 @@ class HDF5TensorRegionView {
 
     tensorData.dset = dSetTmp;
 
-    H5Pclose(pList);
-    H5Sclose(memSpace);
+    std::cout << "close(pList, memSpace) " << pList << " "  << "memSpace" << "\n";
+    HDF5_ERROR(H5Pclose(pList));
+    HDF5_ERROR(H5Sclose(memSpace));
     tensorData.initialized = true;
   }
 
@@ -276,6 +282,7 @@ class HDF5TensorRegionView {
     tensorData.memSpace = memSpace;
 
     hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
+    HDF5_ERROR(pList);
     H5Pset_layout(pList, H5D_CHUNKED);
     hsize_t chunk_dims[ndim + 1];
     chunk_dims[0] = 1;
@@ -288,8 +295,9 @@ class HDF5TensorRegionView {
 
     tensorData.dset = dSetTmp;
 
-    H5Pclose(pList);
-    H5Sclose(memSpace);
+    std::cout << "close(pList, memSpace) " << pList << " "  << "memSpace" << "\n";
+    HDF5_ERROR(H5Pclose(pList));
+    HDF5_ERROR(H5Sclose(memSpace));
     tensorData.initialized = true;
   }
 
@@ -311,6 +319,7 @@ class HDF5TensorRegionView {
     RuntimeData.memSpace = memSpace;
 
     hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
+    HDF5_ERROR(pList);
     H5Pset_layout(pList, H5D_CHUNKED);
     hsize_t chunk_dims[1] = {1024};
     H5Pset_chunk(pList, 1, chunk_dims);
@@ -320,8 +329,9 @@ class HDF5TensorRegionView {
     createTypeAttribute(dSetTmp, DType);
     RuntimeData.dset = dSetTmp;
 
-    H5Pclose(pList);
-    H5Sclose(memSpace);
+    std::cout << "close(pList, memSpace) " << pList << " "  << "memSpace" << "\n";
+    HDF5_ERROR(H5Pclose(pList));
+    HDF5_ERROR(H5Sclose(memSpace));
     RuntimeData.initialized = true;
   }
 
@@ -345,6 +355,7 @@ private:
     status = H5Awrite(attr, H5T_NATIVE_INT, &type_int);
     HDF5_ERROR(status);
 
+    std::cout << "close(attr, attr_space) " << attr << " " << attr_space << "\n";
     status = H5Aclose(attr);
     HDF5_ERROR(status);
     status = H5Sclose(attr_space);
@@ -438,9 +449,11 @@ public:
     HDF5_ERROR(errcode);
 
     // Close resources
-    H5Sclose(fileSpace);
-    H5Sclose(memSpace);
-    H5Sclose(newMemSpace);
+        // Close resources
+    std::cout << "close(fileSpace, memSpace, newMemspace)" << fileSpace << " " << memSpace  << " " << newMemSpace << "\n";
+    HDF5_ERROR(H5Sclose(fileSpace));
+    HDF5_ERROR(H5Sclose(memSpace));
+    HDF5_ERROR(H5Sclose(newMemSpace));
   }
 
 };
