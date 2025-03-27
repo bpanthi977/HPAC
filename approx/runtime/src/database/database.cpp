@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <thread>
+#include <stdexcept>
 #include <sys/stat.h>
 
 #include <H5Dpublic.h>
@@ -74,9 +76,11 @@ hid_t createOrOpenGroup(char *RName, hid_t Root) {
   hid_t GId;
   if (componentExist(RName, Root)) {
     GId = H5Gopen1(Root, RName);
+    std::cout << "GId = H5Gopen1(Root, RName); " << GId << "\n";
     HDF5_ERROR(GId);
   } else {
     GId = H5Gcreate1(Root, RName, H5P_DEFAULT);
+    std::cout << "GId = H5Gcreate1(Root, RName, H5P_DEFAULT); " << GId << "\n";
     HDF5_ERROR(GId);
     if (GId < 0) {
       fprintf(stderr, "Error While Trying to create group %s\nExiting..,\n",
@@ -91,9 +95,11 @@ hid_t createOrOpenGroup(const char *RName, hid_t Root) {
   hid_t GId;
   if (componentExist(RName, Root)) {
     GId = H5Gopen1(Root, RName);
+    std::cout << "GId = H5Gopen1(Root, RName); " << GId << "\n";
     HDF5_ERROR(GId);
   } else {
     GId = H5Gcreate1(Root, RName, H5P_DEFAULT);
+    std::cout << "GId = H5Gcreate1(Root, RName, H5P_DEFAULT); " << GId << "\n";
     HDF5_ERROR(GId);
   }
   return GId;
@@ -104,10 +110,12 @@ hid_t openHDF5File(const char *fileName) {
   std::cout << fileName << std::endl;
   if (fileExists(fileName)) {
     file = H5Fopen(fileName, H5F_ACC_RDWR, H5P_DEFAULT);
+    std::cout << "file = H5Fopen(fileName, H5F_ACC_RDWR, H5P_DEFAULT); " << file << "\n";
     HDF5_ERROR(file);
     fprintf(stderr, "Opening existing file\n");
   } else {
     file = H5Fcreate(fileName, H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT);
+    std::cout << "file = H5Fcreate(fileName, H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT);" << file << "\n";
     HDF5_ERROR(file);
     if (file < 0) {
       fprintf(stderr, "Error While Opening File\n Aborting...\n");
@@ -148,6 +156,7 @@ int HDF5RegionView::writeDataLayout(approx_var_info_t *vars, int numVars,
   }
   else {
     tmpdset = H5Dopen(group, groupName, H5P_DEFAULT);
+    std::cout << "tmpdset = H5Dopen(group, groupName, H5P_DEFAULT);" << tmpdset << "\n";
     HDF5_ERROR(tmpdset);
   }
 
@@ -155,9 +164,11 @@ int HDF5RegionView::writeDataLayout(approx_var_info_t *vars, int numVars,
       H5Dwrite(tmpdset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, mem);
   HDF5_ERROR(status);
   status = H5Dclose(tmpdset);
+  std::cout << "status = H5Dclose(tmpdset);" << tmpdset << ","  << status << "\n";
   HDF5_ERROR(status);
 
   status = H5Sclose(tmpspace);
+  std::cout << "status = H5Dclose(tmpspace);" << tmpspace << ","  << status << "\n";
   HDF5_ERROR(status);
 
   for (int i = 0; i < numVars; i++) {
@@ -192,7 +203,9 @@ void HDF5RegionView::writeFeatureVecToFile(double *data, size_t numRows,
   H5Dwrite(dset, H5T_NATIVE_DOUBLE, memSpace, fileSpace, H5P_DEFAULT, data);
   totalNumRows += numRows;
 
-  H5Sclose(fileSpace);
+  auto ret = H5Sclose(fileSpace);
+  std::cout << "H5Sclose(fileSpace);" << fileSpace << ","  << ret << "\n";
+  HDF5_ERROR(ret);
 }
 
 void HDF5RegionView::createDataSet(int totalElements, size_t ChunkRows) {
@@ -202,7 +215,9 @@ void HDF5RegionView::createDataSet(int totalElements, size_t ChunkRows) {
 
   if (!componentExist("data", group)) {
     hid_t fileSpace = H5Screate_simple(NUM_DIMS, dims, maxDims);
+    HDF5_ERROR(fileSpace);
     hid_t pList = H5Pcreate(H5P_DATASET_CREATE);
+    HDF5_ERROR(pList);
     H5Pset_layout(pList, H5D_CHUNKED);
     // CHUNK_DIMS impacts performance considerably.
     // TODO: give an option to the config file
@@ -212,11 +227,16 @@ void HDF5RegionView::createDataSet(int totalElements, size_t ChunkRows) {
     H5Pset_chunk(pList, NUM_DIMS, chunk_dims);
     dset = H5Dcreate(group, "data", H5T_NATIVE_DOUBLE, fileSpace, H5P_DEFAULT,
                      pList, H5P_DEFAULT);
+    HDF5_ERROR(dset);
 
-    H5Sclose(fileSpace);
-    H5Pclose(pList);
+    HDF5_ERROR(H5Sclose(fileSpace));
+    std::cout << "H5Sclose(fileSpace);" << fileSpace <<"\n";
+    HDF5_ERROR(H5Pclose(pList));
+    std::cout << "H5Sclose(pList);" << pList <<"\n";
   } else {
     dset = H5Dopen(group, "data", H5P_DEFAULT);
+    std::cout << "dset = H5Dopen(group, data, H5P_DEFAULT);" << dset << "\n";
+    HDF5_ERROR(dset);
     // existing dataset dimensions
     hsize_t existing_dims[NUM_DIMS];
     hid_t dataspace = H5Dget_space(dset);
@@ -243,18 +263,19 @@ HDF5RegionView::HDF5RegionView(uintptr_t rAddr, const char *name, hid_t file,
 
 HDF5RegionView::~HDF5RegionView() {
   std::cout << "~HDF5RegionView" << "\n";
-  H5Sclose(memSpace);
-  H5Dclose(dset);
-  H5Gclose(group);
+  std::cout << "close memSpace " << memSpace << " dset " << dset << " group " << group << "\n";
+  HDF5_ERROR(H5Sclose(memSpace));
+  HDF5_ERROR(H5Dclose(dset));
+  HDF5_ERROR(H5Gclose(group));
 }
 
 HDF5TensorRegionView::~HDF5TensorRegionView() {
-  std::cout << "~HDF5TensorRegionView" << "\n";
-  H5Gclose(regionGroup);
+  std::cout << "~HDF5TensorRegionView close(regionGroup)" << regionGroup << "\n";
+  HDF5_ERROR(H5Gclose(regionGroup));
 }
 
 HDF5DB::HDF5DB(const char *fileName) {
-  std::cout << " new HDF5DB(" << fileName << ")\n";
+  std::cout << " new HDF5DB(" << fileName << ") in thread " << std::this_thread::get_id() << "\n";
   file = openHDF5File(fileName);
   HDF5_ERROR(file);
 }
@@ -284,11 +305,12 @@ void HDF5DB::DataToDB(void *region, double *data, size_t numRows, int numCols) {
 }
 
 HDF5DB::~HDF5DB() {
-  std::cout << "~HDF5DB " << file << "\n";
+  std::cout << "~HDF5DB close(file)" << file << "\n";
   for (auto &it : regions) 
     delete it;
 
-  H5Fclose(file);
+  HDF5_ERROR(H5Fclose(file));
+  
 }
 
 void HDF5DB::RegisterMemory(const char *gName, const char *name, void *ptr,
@@ -306,10 +328,13 @@ void HDF5DB::RegisterMemory(const char *gName, const char *name, void *ptr,
                     H5P_DEFAULT, ptr);
   HDF5_ERROR(status);
   status = H5Dclose(tmpdset);
+  std::cout << "status = H5Dclose(tmpdset);" << tmpdset << ", status = " << status << "\n";
   HDF5_ERROR(status);
   status = H5Sclose(tmpspace);
+  std::cout << "status = H5Dclose(tmpspace);" << tmpspace << ", status = " << status << "\n";
   HDF5_ERROR(status);
   status = H5Gclose(rId);
+  std::cout << "status = H5Dclose(rId);" << rId << ", status = " << status << "\n";
   HDF5_ERROR(status);
 }
 
