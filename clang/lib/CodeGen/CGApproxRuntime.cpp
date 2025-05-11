@@ -1407,8 +1407,6 @@ void CGApproxRuntime::CGApproxRuntimeEmitLabelInit(
 
 void CGApproxRuntime::CGApproxRuntimeEmitModelPathInit(
     CodeGenFunction &CGF, ApproxModelPathClause &ModelClause) {
-  std::cout << "ApproxRuntimeEmitModelPathInit\n";
-
   ASTContext &C = CGM.getContext();
   CodeGen::CodeGenTypes &Types = CGM.getTypes();
   llvm::PointerType *CharPtrTy =
@@ -1416,18 +1414,18 @@ void CGApproxRuntime::CGApproxRuntimeEmitModelPathInit(
 
   LValue path;
   llvm::Value *Addr;
-  if (StringLiteral *LiteralExpr = dyn_cast_or_null<StringLiteral>(ModelClause.getPath())) {
+  Expr *PathExpr = ModelClause.getPath();
+  if (StringLiteral *LiteralExpr = dyn_cast_or_null<StringLiteral>(PathExpr)) {
       path =
           CGF.EmitStringLiteralLValue(cast<StringLiteral>(ModelClause.getPath()));
-      std::cout << " StringLiteral path='" << ModelClause.getPath() << "'\n";
     Addr = path.getPointer(CGF);
   }else{
-    Addr = CGF.EmitLValue(ModelClause.getPath()).getPointer(CGF);
-    std::cout << " LValue path='" << ModelClause.getPath() << "'\n";
+    // Get the expression's result as an rvalue
+    RValue RV = CGF.EmitAnyExpr(PathExpr);
+    // Extract the pointer value
+    Addr = RV.getScalarVal();
   }
   Addr = CGF.Builder.CreatePointerCast(Addr, CharPtrTy);
-  std::cout << " Addr='" << Addr << "'\n";
-
   approxRTParams[ModelPath] = Addr;
 }
 
