@@ -1383,70 +1383,38 @@ void CGApproxRuntime::CGApproxRuntimeEmitDataValues(CodeGenFunction &CGF) {
   approxRTParams[DataSizeOut] = NumOfElements;
 }
 
-void CGApproxRuntime::CGApproxRuntimeEmitLabelInit(
-    CodeGenFunction &CGF, ApproxLabelClause &LabelClause) {
-  std::cout << "ApproxRuntimeEmitLabelInit\n";
+llvm::Value *CGApproxRuntime::GetStringAddr(CodeGenFunction &CGF, Expr *StringExpr) {
   ASTContext &C = CGM.getContext();
   CodeGen::CodeGenTypes &Types = CGM.getTypes();
   llvm::PointerType *CharPtrTy =
       llvm::PointerType::getUnqual(Types.ConvertType(C.CharTy));
 
-  LValue label;
   llvm::Value *Addr;
-  if (StringLiteral *LiteralExpr = dyn_cast_or_null<StringLiteral>(LabelClause.getLabel())) {
-      label =
-          CGF.EmitStringLiteralLValue(cast<StringLiteral>(LabelClause.getLabel()));
-    Addr = label.getPointer(CGF);
-  }else{
-    Addr = CGF.EmitLValue(LabelClause.getLabel()).getPointer(CGF);
-  }
-  Addr = CGF.Builder.CreatePointerCast(Addr, CharPtrTy);
-  approxRTParams[Label] = Addr;
-}
-
-
-void CGApproxRuntime::CGApproxRuntimeEmitModelPathInit(
-    CodeGenFunction &CGF, ApproxModelPathClause &ModelClause) {
-  ASTContext &C = CGM.getContext();
-  CodeGen::CodeGenTypes &Types = CGM.getTypes();
-  llvm::PointerType *CharPtrTy =
-      llvm::PointerType::getUnqual(Types.ConvertType(C.CharTy));
-
-  LValue path;
-  llvm::Value *Addr;
-  Expr *PathExpr = ModelClause.getPath();
-  if (StringLiteral *LiteralExpr = dyn_cast_or_null<StringLiteral>(PathExpr)) {
-      path =
-          CGF.EmitStringLiteralLValue(cast<StringLiteral>(ModelClause.getPath()));
-    Addr = path.getPointer(CGF);
-  }else{
-    // Get the expression's result as an rvalue
-    RValue RV = CGF.EmitAnyExpr(PathExpr);
-    // Extract the pointer value
+  if (StringLiteral *LiteralExpr = dyn_cast_or_null<StringLiteral>(StringExpr)) {
+    LValue LV =
+      CGF.EmitStringLiteralLValue(cast<StringLiteral>(StringExpr));
+    Addr = LV.getPointer(CGF);
+  } else {
+    RValue RV = CGF.EmitAnyExpr(StringExpr);
     Addr = RV.getScalarVal();
   }
   Addr = CGF.Builder.CreatePointerCast(Addr, CharPtrTy);
-  approxRTParams[ModelPath] = Addr;
+  return Addr;
+}
+
+void CGApproxRuntime::CGApproxRuntimeEmitLabelInit(
+    CodeGenFunction &CGF, ApproxLabelClause &LabelClause) {
+  approxRTParams[Label] = GetStringAddr(CGF, LabelClause.getLabel());
+}
+
+void CGApproxRuntime::CGApproxRuntimeEmitModelPathInit(
+    CodeGenFunction &CGF, ApproxModelPathClause &ModelClause) {
+  approxRTParams[ModelPath] = GetStringAddr(CGF, ModelClause.getPath());
 }
 
 void CGApproxRuntime::CGApproxRuntimeEmitDBPathInit(
     CodeGenFunction &CGF, ApproxDBPathClause &DBClause) {
-  ASTContext &C = CGM.getContext();
-  CodeGen::CodeGenTypes &Types = CGM.getTypes();
-  llvm::PointerType *CharPtrTy =
-      llvm::PointerType::getUnqual(Types.ConvertType(C.CharTy));
-
-  LValue path;
-  llvm::Value *Addr;
-  if (StringLiteral *LiteralExpr = dyn_cast_or_null<StringLiteral>(DBClause.getPath())) {
-      path =
-          CGF.EmitStringLiteralLValue(cast<StringLiteral>(DBClause.getPath()));
-    Addr = path.getPointer(CGF);
-  }else{
-    Addr = CGF.EmitLValue(DBClause.getPath()).getPointer(CGF);
-  }
-  Addr = CGF.Builder.CreatePointerCast(Addr, CharPtrTy);
-  approxRTParams[DBPath] = Addr;
+  approxRTParams[DBPath] = GetStringAddr(CGF, DBClause.getPath());
 } 
 
 void CGApproxRuntime::CGApproxRuntimeEmitMLInit(
