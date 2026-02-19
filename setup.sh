@@ -51,9 +51,12 @@ if [ ! -f $clang_bin ]; then
     ninja -j $threads
     ninja -j $threads install
     popd
+    rm -f hpac_env.sh
     echo "#!/bin/bash" > hpac_env.sh
     echo "export PATH=$prefix/bin/:\$PATH" >> hpac_env.sh
     echo "export LD_LIBRARY_PATH=$prefix/lib/:\$LD_LIBRARY_PATH" >> hpac_env.sh
+    echo "export C_INCLUDE_PATH=$prefix/include:$C_INCLUDE_PATH" >> hpac_env.sh 
+    echo "export CPLUS_INCLUDE_PATH=$prefix/include:$CPLUS_INCLUDE_PATH" >> hpac_env.sh 
     echo "export CC=clang" >> hpac_env.sh
     echo "export CPP=clang++" >> hpac_env.sh
 fi
