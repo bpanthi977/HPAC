@@ -1656,7 +1656,7 @@ void CGApproxRuntime::emitApproxDeclareTensor(
 
 void CGApproxRuntime::emitApproxDeclareTensorImpl(CodeGenFunction *CGF, const ApproxDeclareTensorDecl *D, 
 TensorMemConversionDispatcher& Dispatcher) {
-
+  SurrogateInfo.SymbolVars.clear();
   auto *TensorFunctor =
       dyn_cast<ApproxDeclareTensorFunctorDecl>(D->getFunctor());
   auto IndexRefExprsRHS = TensorFunctor->getSymbolicVarsUniqueToEachSlice();
