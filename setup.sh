@@ -4,8 +4,8 @@
 export nlohmann_json_DIR=/home/bp0110/hpacml-deps/json/build/
 export HDF5_Dir=/home/bp0110/hpacml-deps/hdf5/build/HDF5-1.14.5-Linux/HDF_Group/HDF5/1.14.5
 
-prefix=$1
-threads=$2
+prefix=/mnt/SharedOne/bpanthi/hpacml/build/
+threads=20
 current_dir=$(pwd)
 NOCOLOR='\033[0m'
 RED='\033[0;31m'
