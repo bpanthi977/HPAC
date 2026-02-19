@@ -113,4 +113,14 @@ if [ ! -f $approx_runtime_lib ]; then
     popd
     echo "export HPAC_LIBRARY_LOCATION=$prefix/lib" >> hpac_env.sh
 fi
+
+
+if [ ! -f $openmp_lib ]; then
+    mkdir -p openmp/build/
+    pushd openmp/build/
+      cmake -GNinja ../ -DLIBOMP_OMPD_SUPPORT=OFF -DCMAKE_INSTALL_PREFIX=$prefix
+      ninja -j 20
+      ninja install
+    popd
+fi
 exit
