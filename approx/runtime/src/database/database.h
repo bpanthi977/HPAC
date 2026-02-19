@@ -55,7 +55,7 @@ namespace {
         return getHDF5DataType<CType>();
       #include "clang/Basic/approxTypes.def"
       case INVALID:
-        std::cout << "INVALID DATA TYPE passed in argument list\n";
+        std::cerr << "INVALID DATA TYPE passed in argument list\n";
     }
   }
 };
@@ -86,7 +86,7 @@ class HDF5TensorRegionView {
 
     bool isInitialized() const { return initialized; }
     ~TensorData() {
-      std::cout << "~TensorRegionView::TensorData" << dset_name << "\n";
+      dbgs() << "~TensorRegionView::TensorData" << dset_name << "\n";
       if (initialized) {
         auto errcode = H5Dclose(dset);
         HDF5_ERROR(errcode);
@@ -546,7 +546,6 @@ public:
 class HDF5DB : public BaseDB {
   hid_t file;
   std::vector<HDF5TensorRegionView *> regions;
-
 public:
   HDF5DB(const char *fileName);
   ~HDF5DB();
@@ -559,7 +558,7 @@ public:
   void TensorToDB(void *Region, Tensor &tensor, ApproxType AT) {
     uintptr_t index = reinterpret_cast<uintptr_t>(Region);
     if (index >= regions.size()) {
-      std::cout << "Index (" << index
+      std::cerr << "Index (" << index
                 << " should never be larger than vector size (" << regions.size()
                 << "\n";
       exit(-1);
@@ -570,7 +569,7 @@ public:
   void TensorToDBChunkInit(void *Region, const TensorImpl::Shape& full_shape, ApproxType AT, const std::vector<int64_t>& chunk_vector, size_t num_chunks, bool is_input) {
     uintptr_t index = reinterpret_cast<uintptr_t>(Region);
     if (index >= regions.size()) {
-      std::cout << "Index (" << index
+      std::cerr << "Index (" << index
                 << " should never be larger than vector size (" << regions.size()
                 << "\n";
       exit(-1);
@@ -582,7 +581,7 @@ public:
   void TensorToDBChunk(void *Region, Tensor &tensor, std::vector<int64_t>& loc_vector, bool is_input, bool first) {
     uintptr_t index = reinterpret_cast<uintptr_t>(Region);
     if (index >= regions.size()) {
-      std::cout << "Index (" << index
+      std::cerr << "Index (" << index
                 << " should never be larger than vector size (" << regions.size()
                 << "\n";
       exit(-1);
@@ -593,7 +592,7 @@ public:
   void RuntimeToDB(void *Region, float runtime) {
     uintptr_t index = reinterpret_cast<uintptr_t>(Region);
     if (index >= regions.size()) {
-      std::cout << "Index (" << index
+      std::cerr << "Index (" << index
                 << " should never be larger than vector size (" << regions.size()
                 << "\n";
       exit(-1);

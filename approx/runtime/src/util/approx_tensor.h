@@ -6,6 +6,11 @@
 
 #include <cuda_runtime.h>
 
+#ifdef DEBUG
+#define dbgs() std::cout
+#else
+#define dbgs() if(0) std::cout
+#endif
 
 enum class Direction : int8_t {
   TENSOR_TO_MEM = 0,
@@ -273,9 +278,9 @@ class TensorWrapper {
   void copy_(Tensor &T) {
     IP->copy_(tensors, T);
     if(OriginalDevice != T.device()) {
-      std::cout << "Original device: " << OriginalDevice << "\n";
-      std::cout << "Current device: " << T.device() << "\n";
-      std::cout << "Copying the data\n";
+      dbgs() << "Original device: " << OriginalDevice << "\n";
+      dbgs() << "Current device: " << T.device() << "\n";
+      dbgs() << "Copying the data\n";
       FirstTensorOriginal.copy_(tensors[0]);
     }
   }
@@ -499,7 +504,7 @@ template<typename T>
         return getTensorType<CType>();
       #include "clang/Basic/approxTypes.def"
       case INVALID:
-        std::cout << "INVALID DATA TYPE passed in argument list\n";
+	std::cerr << "INVALID DATA TYPE passed in argument list\n";
       default:
         std::cerr << "Unknown DType value: " << static_cast<int>(Type) << std::endl;
     }

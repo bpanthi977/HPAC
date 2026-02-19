@@ -39,6 +39,14 @@
 #include "approx_tensor.h"
 
 
+#ifdef DEBUG
+#define dbgs() std::cout
+#define dbg_err() std::cerr
+#else
+#define dbgs() if(0) std::cout
+#define dbg_err() if(0) std::cerr
+#endif
+
 using namespace std;
 
 #define MEMO_IN 1
@@ -170,7 +178,7 @@ public:
     if (env_p) {
       useChunk = atoi(env_p);
       if (useChunk != 0 && useChunk != 1)
-        std::cerr << "USE_CHUNK must be 0 or 1";
+        dbg_err() << "USE_CHUNK must be 0 or 1";
     } else {
       useChunk = 0;
     }
@@ -181,9 +189,9 @@ public:
     env_p = std::getenv("IPT_CHUNK_SIZE");
     if (env_p) {
       iptChunkSize = atoi(env_p);
-      std::cout << "input chunk size " << iptChunkSize << std::endl;
+      dbgs() << "input chunk size " << iptChunkSize << std::endl;
       if (iptChunkSize > thresholdChunk)
-        std::cerr << "Chunk size exceeds 4GB limit\n";
+        dbg_err() << "Chunk size exceeds 4GB limit\n";
     } else{
       iptChunkSize = defaultChunk;
     }
@@ -191,9 +199,9 @@ public:
     env_p = std::getenv("OPT_CHUNK_SIZE");
     if (env_p) {
       optChunkSize = atoi(env_p);
-      std::cout << "output chunk size " << optChunkSize << std::endl;
+      dbgs() << "output chunk size " << optChunkSize << std::endl;
       if (optChunkSize > thresholdChunk)
-        std::cerr << "Chunk size exceeds 4GB limit\n";
+        dbg_err() << "Chunk size exceeds 4GB limit\n";
     } else{
       optChunkSize = defaultChunk;
     }
@@ -236,7 +244,7 @@ public:
     delete [] randomNumbers;
 
     if (DefaultDB != NULL) {
-      std::cout <<" Destructor on DefaultDB \n";
+      dbgs() <<" Destructor on DefaultDB \n";
       delete DefaultDB;
       if (DefaultDBName != NULL) {
 	DBs.erase(*DefaultDBName);
@@ -244,7 +252,7 @@ public:
     }
 
     for (auto& pair : DBs) {
-      std::cout <<" Destructor on DBs[" << pair.first << "\n";
+      dbgs() <<" Destructor on DBs " << pair.first << " [" << pair.second << "] " << "\n";
         delete pair.second;
     }
     DBs.clear();
@@ -417,14 +425,14 @@ void ml_infer(ml_argdesc_t &arg) {
                            arg.input_vars[0].num_elem, arg.ipts, arg.opts);
       break;
     case TensorsFound::INPUT:
-      std::cerr << "Input only not supported yet\n";
+      dbg_err() << "Input only not supported yet\n";
       arg.accurateFN(arg.accurateFN_arg);
       // ipt_metadata = static_cast<internal_repr_metadata_t *>(input_vars[0].ptr);
       // RTEnv.Model.evaluate(static_cast<ApproxType>(input_vars[0].data_type),
                           //  input_vars[0].num_elem, ipt_metadata->Tensors[0], opts);
       break;
     case TensorsFound::OUTPUT:
-      std::cerr << "Output only not supported yet\n";
+      dbg_err() << "Output only not supported yet\n";
       arg.accurateFN(arg.accurateFN_arg);
       // RTEnv.Model.evaluate(static_cast<ApproxType>(output_vars[0].data_type),
                           //  output_vars[0].num_elem, ipts, opts);
@@ -439,21 +447,21 @@ void ml_infer(ml_argdesc_t &arg) {
 }
 
 void printIntArrayRef(TensorImpl::Shape arr) {
-    std::cout << "[";
+    dbgs() << "[";
     for (size_t i = 0; i < arr.size(); ++i) {
-        std::cout << arr[i];
+        dbgs() << arr[i];
         if (i < arr.size() - 1) {
-            std::cout << ", ";
+            dbgs() << ", ";
         }
     }
-    std::cout << "]" << std::endl;
+    dbgs() << "]" << std::endl;
 }
 
 template <typename T>
 void printVector(vector<T> vec) {
-  std::cout << "[";
+  dbgs() << "[";
   std::copy(vec.begin(), vec.end(), std::ostream_iterator<int>(std::cout, ", "));
-  std::cout << "\b\b]" << std::endl; // Hack to remove the last comma and space
+  dbgs() << "\b\b]" << std::endl; // Hack to remove the last comma and space
 }
 
 size_t get_chunk_shape(TensorImpl::Shape shape, ApproxType DType, std::vector<int64_t>& chunk_vector, size_t chunkSize) {
@@ -606,6 +614,7 @@ void pipelined_device_to_disk_sync(ml_argdesc_t &arg, internal_repr_metadata_t &
 
 }
 
+
 void ml_offline_train(ml_argdesc_t &arg) {
   internal_repr_metadata_t *ipt_metadata = nullptr;
   internal_repr_metadata_t *opt_metadata = nullptr;
@@ -616,14 +625,14 @@ void ml_offline_train(ml_argdesc_t &arg) {
                            arg.input_vars[0].num_elem, arg.ipts, arg.opts);
       break;
     case TensorsFound::INPUT:
-      std::cerr << "Input only not supported yet\n";
+      dbg_err() << "Input only not supported yet\n";
       arg.accurateFN(arg.accurateFN_arg);
       // ipt_metadata = static_cast<internal_repr_metadata_t *>(input_vars[0].ptr);
       // RTEnv.getModel(arg.model_path)->evaluate(static_cast<ApproxType>(input_vars[0].data_type),
                           //  input_vars[0].num_elem, ipt_metadata->Tensors[0], opts);
       break;
     case TensorsFound::OUTPUT:
-      std::cerr << "Output only not supported yet\n";
+      dbg_err() << "Output only not supported yet\n";
       arg.accurateFN(arg.accurateFN_arg);
       // RTEnv.getModel(arg.model_path)->evaluate(static_cast<ApproxType>(output_vars[0].data_type),
                           //  output_vars[0].num_elem, ipts, opts);
@@ -691,12 +700,12 @@ void ml_invoke(MLType type, void (*accurateFN)(void *), void *arg,
   if(type == ML_INFER) {
     ml_infer(ml_arg);
   } else if(type == ML_ONLINETRAIN) {
-    std::cerr << "Online training not supported yet\n";
+    dbg_err() << "Online training not supported yet\n";
     accurateFN(arg);
   } else if(type == ML_OFFLINETRAIN) {
     ml_offline_train(ml_arg);
   } else {
-    std::cerr << "Unknown ML type\n";
+    dbg_err() << "Unknown ML type\n";
     accurateFN(arg);
   }
 }
@@ -726,17 +735,17 @@ void __approx_exec_call(void (*accurateFN)(void *), void (*perfoFN)(void *),
     memoize_out(accurateFN, arg, output_vars, num_outputs);
   } 
   else if (is_ml((MLType) ml_type)){
-    std::cout << "__approx_exec_call MLType.\n";
+    dbgs() << "__approx_exec_call MLType.\n";
     if (model_path != NULL)
-      std::cout << "   model_path=" << model_path << "\n";
+      dbgs() << "   model_path=" << model_path << "\n";
     if (db_path != NULL)
-      std::cout << "   db_path=" << db_path << "\n";
+      dbgs() << "   db_path=" << db_path << "\n";
     
     ml_invoke((MLType) ml_type, accurateFN, arg, region_name, inputs, num_inputs, outputs, num_outputs, model_path, db_path);
   } else if(petru_type & PETRUBATE_OUT){
     petrubate(accurateFN, output_vars, num_outputs, region_name);
   } else {
-    std::cerr << "Unknown execution type\n";
+    dbg_err() << "Unknown execution type\n";
     accurateFN(arg);
   }
 }

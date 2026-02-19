@@ -42,7 +42,7 @@ void add(void *sum, void *augend, void *addend, ApproxType Type,
     return;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -52,7 +52,7 @@ void add(void *sum, void *augend, void *addend, ApproxType Type,
     return add((CType *)sum, (CType *)augend, (CType *)addend, numElements);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -78,7 +78,7 @@ void sub(void *difference, void *minuend, void *subtrahend, ApproxType Type,
     return;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -89,7 +89,7 @@ void sub(void *difference, void *minuend, void *subtrahend, ApproxType Type,
                numElements);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -115,7 +115,7 @@ void multiply(void *product, void *multiplier, void *multiplicand,
     return;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -126,7 +126,7 @@ void multiply(void *product, void *multiplier, void *multiplicand,
                     (CType *)multiplicand, numElements);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -152,7 +152,7 @@ void divide(void *quotient, void *dividend, void *divisor, ApproxType Type,
     return;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -163,7 +163,7 @@ void divide(void *quotient, void *dividend, void *divisor, ApproxType Type,
                   numElements);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -179,7 +179,7 @@ void petrubate_var(void *ptr, ApproxType Type,
     return;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -189,7 +189,7 @@ void petrubate_var(void *ptr, ApproxType Type,
     return petrubate((CType *) ptr, numElements, error);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -225,7 +225,7 @@ bool rel_error_larger(void *ground, void *test, size_t numElements,
     return fabs(temp) > threshold;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -236,7 +236,7 @@ bool rel_error_larger(void *ground, void *test, size_t numElements,
                             threshold);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -262,7 +262,7 @@ double average(void *dataPtr, size_t numElements, ApproxType Type) {
     return (double)(*(CType *)dataPtr);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -272,7 +272,7 @@ double average(void *dataPtr, size_t numElements, ApproxType Type) {
     return average((CType *)dataPtr, numElements);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -288,7 +288,7 @@ void copyData(void *dest, void *src, size_t numElements, ApproxType Type) {
     return;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -298,7 +298,7 @@ void copyData(void *dest, void *src, size_t numElements, ApproxType Type) {
     return copyData((CType *)dest, (CType *)src, numElements);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -311,7 +311,7 @@ float aggregate( void *data, size_t numElements, ApproxType Type){
     return aggregate((CType *)data, numElements);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   return 0.0f;
@@ -327,7 +327,7 @@ void abs_error_var(void *ptr, ApproxType Type,
     return;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -337,7 +337,7 @@ void abs_error_var(void *ptr, ApproxType Type,
     return abs_error((CType *) ptr, numElements, error);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }
@@ -359,7 +359,7 @@ void dist_error_var(void *ptr, ApproxType Type,
     return;
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   } else {
@@ -369,7 +369,7 @@ void dist_error_var(void *ptr, ApproxType Type,
     return dist_error((CType *) ptr, numElements, distribution, generator, avg);
 #include "clang/Basic/approxTypes.def"
     case INVALID:
-      std::cout << "INVALID DATA TYPE passed in argument list\n";
+      std::cerr << "INVALID DATA TYPE passed in argument list\n";
       break;
     }
   }

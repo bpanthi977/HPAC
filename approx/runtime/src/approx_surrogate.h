@@ -21,6 +21,12 @@
 #include <cuda_runtime.h>
 #include "approx_tensor.h"
 
+#ifdef DEBUG
+#define dbgs() std::cout
+#else
+#define dbgs() if(0) std::cout
+#endif
+
 
 class CPUExecutionPolicy {
   public:
@@ -116,7 +122,7 @@ typedef struct internal_tensor_repr_data {
           opt.copy_(T);
           return;
         }
-        std::cout << "Error: The output tensor does not match the expected shape\n"
+        std::cerr << "Error: The output tensor does not match the expected shape\n"
                   << "Expected: " << opt.sizes() << " Got: " << T.sizes() << "\n"
                   << "Skipping update\n"
                   << "Please check the model architecture\n";
@@ -246,7 +252,7 @@ struct EvalDispatcher {
         break;
       #include "clang/Basic/approxTypes.def"
       case INVALID:
-        std::cout << "INVALID DATA TYPE passed in argument list\n";
+        std::cerr << "INVALID DATA TYPE passed in argument list\n";
     }
   }
 
@@ -259,7 +265,7 @@ struct EvalDispatcher {
         break;
       #include "clang/Basic/approxTypes.def"
       case INVALID:
-        std::cout << "INVALID DATA TYPE passed in argument list\n";
+        std::cerr << "INVALID DATA TYPE passed in argument list\n";
       }
   }
 
@@ -350,8 +356,8 @@ private:
                    at::ScalarType dType)
   {
     try {
-      std::cout << "Loading model " << model_path << "\n";
-      std::cout << "    Device: " << device << " dType: " << dType << "\n";
+      dbgs() << "Loading model " << model_path << "\n";
+      dbgs() << "    Device: " << device << " dType: " << dType << "\n";
       module = torch::jit::load(model_path);
       module.to(device);
       module.to(dType);
@@ -397,10 +403,8 @@ private:
                         DataType** inputs,
                         DataType** outputs)
   {
-    #ifdef DEBUG
-    std::cout << "SurrogateModel::_evaluate(" << num_elements << "," << num_in << "," << num_out << ", _, _, " << ")\n";
-    std::cout << __FILE__ << ":" << __LINE__ << "\n";
-    #endif
+    dbgs() << "SurrogateModel::_evaluate(" << num_elements << "," << num_in << "," << num_out << ", _, _, " << ")\n";
+    dbgs() << __FILE__ << ":" << __LINE__ << "\n";
 
 
     auto input = translator->arrayToTensor(num_elements, num_in, inputs);
@@ -427,10 +431,9 @@ private:
                         internal_repr_metadata_t &input,
                         DataType** outputs)
   {
-    #ifdef DEBUG
-    std::cout << "SurrogateModel::_eval_only(" << num_elements << "," << num_in << "," << num_out << ", _, _, " << ")\n";
-    std::cout << __FILE__ << ":" << __LINE__ << "\n";
-    #endif
+    dbgs() << "SurrogateModel::_eval_only(" << num_elements << "," << num_in << "," << num_out << ", _, _, " << ")\n";
+    dbgs() << __FILE__ << ":" << __LINE__ << "\n";
+
 
 
       torch::NoGradGuard no_grad;
@@ -447,10 +450,8 @@ private:
 
   inline void _eval_only(
    internal_repr_metadata_t &inputs, internal_repr_metadata_t &outputs) {
-    #ifdef DEBUG
-    std::cout << "SurrogateModel::_eval_only(_,_)\n";
-    std::cout << __FILE__ << ":" << __LINE__ << "\n";
-    #endif
+    dbgs() << "SurrogateModel::_eval_only(_,_)\n";
+    dbgs() << __FILE__ << ":" << __LINE__ << "\n";
 
       auto FPEvent = EventRecorder::CreateGPUEvent("Forward Pass");
       auto FromTens = EventRecorder::CreateGPUEvent("From Tensor");

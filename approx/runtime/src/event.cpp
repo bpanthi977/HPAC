@@ -74,10 +74,10 @@ namespace EventRecorder {
     }
 
     void LogEvent(GPUEvent e) {
-        std::cout << "EVENT " << e.getName() << ": " << e.elapsedTime() << "ms\n";
+      // std::cout << "EVENT " << e.getName() << ": " << e.elapsedTime() << "ms\n";
     }
 
     void LogEvent(CPUEvent e) {
-        std::cout << "EVENT " << e.getName() << ": " << e.elapsedTime() << "ms\n";
+      // std::cout << "EVENT " << e.getName() << ": " << e.elapsedTime() << "ms\n";
     }
 }
