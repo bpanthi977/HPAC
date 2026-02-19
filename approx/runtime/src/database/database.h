@@ -550,6 +550,7 @@ class HDF5DB : public BaseDB {
 public:
   HDF5DB(const char *fileName);
   ~HDF5DB();
+  HDF5DB(const HDF5DB&) = delete;
   void *InstantiateRegion(uintptr_t Addr, const char *Name) final;
 
   void DataToDB(void *Region, double *Data, size_t NumRows, int NumCols) final;
