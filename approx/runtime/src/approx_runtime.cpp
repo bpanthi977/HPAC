@@ -82,6 +82,7 @@ public:
   int64_t optChunkSize;
   vector<int64_t> tensorShape;
   BaseDB *DefaultDB = NULL;
+  std::string *DefaultDBName = NULL; 
   std::unordered_map<std::string, BaseDB*> DBs;
   SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double> DefaultModel = {"", false};
   std::unordered_map<std::string, SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double>*> Models;
@@ -98,7 +99,21 @@ public:
 
     env_p = std::getenv("HPAC_DB_FILE");
     if (env_p) {
-      DefaultDB = new HDF5DB(env_p);
+      std::string filename = "";
+      int i = 0;
+      char ch;
+      while ((ch = env_p[i++]) != '\0') {
+	if (ch == ';') {
+	  if (filename.size() != 0) {
+	    getDB(filename.c_str());
+	    filename = "";
+	  }
+	}
+	filename += ch;
+      }
+      if (filename.size() != 0) {
+	getDB(filename.c_str());
+      }
     }
 
     env_p = std::getenv("SURROGATE_MODEL");
@@ -223,6 +238,9 @@ public:
     if (DefaultDB != NULL) {
       std::cout <<" Destructor on DefaultDB \n";
       delete DefaultDB;
+      if (DefaultDBName != NULL) {
+	DBs.erase(*DefaultDBName);
+      }
     }
 
     for (auto& pair : DBs) {
@@ -257,6 +275,7 @@ public:
     if (_db_path == NULL) {
       if (DefaultDB == NULL) {
 	DefaultDB = new HDF5DB("test.h5");
+	DefaultDBName = new std::string("test.h5");
       }
       return DefaultDB;
     } else {
@@ -267,6 +286,10 @@ public:
       } else {
 	auto db = new HDF5DB(_db_path);
 	DBs[db_path] = db;
+	if (DefaultDB == NULL) {
+	  DefaultDB = db;
+	  DefaultDBName = new std::string(_db_path);
+	}
 	return db;
       }
     }
