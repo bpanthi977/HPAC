@@ -246,8 +246,9 @@ public:
     if (it != Models.end()) {
       return it->second;
     } else {
+      std::string key = model_path;
       auto model = new SurrogateModel<GPUExecutionPolicy, CatTensorTranslator<double>, double>(std::move(model_path), false);
-      Models[model_path] = model;
+      Models[key] = model;
       return model;
     }
   }
