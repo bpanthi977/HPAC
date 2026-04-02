@@ -9,7 +9,7 @@ endif()
 
 # if the cmake_build_type is debug
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-  add_definitions(-DDEBUG)
+   #add_definitions(-DDEBUG)
 endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/;${CMAKE_MODULE_PATH}")
