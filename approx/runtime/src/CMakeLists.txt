@@ -55,9 +55,9 @@ add_library(approx ${LIBAPPROX_LIBRARY_KIND} ${LIBAPPROX_SOURCE_FILES})
 # set to RelWithDebInfo
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
-configure_file("/home/bp0110/hpacml-deps/json/cmake/nlohmann_jsonConfigVersion.cmake.in" "/home/bp0110/hpacml-deps/json/cmake/nlohmann_jsonConfigVersion.cmake")
+#configure_file("/home/bp0110/hpacml-deps/json/cmake/nlohmann_jsonConfigVersion.cmake.in" "/home/bp0110/hpacml-deps/json/cmake/nlohmann_jsonConfigVersion.cmake")
 find_package(nlohmann_json 3.2.0 REQUIRED)
-find_package(HDF5 NAMES hdf5 COMPONENTS C shared REQUIRED NO_DEFAULT_PATH PATHS ${HDF5_Dir})
+find_package(HDF5 NAMES hdf5 COMPONENTS C shared REQUIRED PATHS ${HDF5_Dir})
 
 set_target_properties(approx PROPERTIES
     PREFIX "" SUFFIX "" OUTPUT_NAME "${LIBAPPROX_LIB_FILE}"

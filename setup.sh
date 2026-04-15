@@ -1,11 +1,9 @@
 #!/bin/bash
 
 
-export nlohmann_json_DIR=/home/bp0110/hpacml-deps/json/build/
-export HDF5_Dir=/home/bp0110/hpacml-deps/hdf5/build/HDF5-1.14.5-Linux/HDF_Group/HDF5/1.14.5
-
-prefix=/mnt/SharedOne/bpanthi/hpacml/build/
-threads=20
+#prefix=/jet/home/bpanthi/ccr180031p/bpanthi/hpacml_build_gpu/
+prefix=$base/install
+threads=5
 current_dir=$(pwd)
 NOCOLOR='\033[0m'
 RED='\033[0;31m'
@@ -30,13 +28,12 @@ openmp_lib=$prefix/lib/libomp.so
 
 
 if [ ! -f $clang_bin ]; then
-  mkdir -p build_compiler
-  mkdir -p $prefix
-  pushd build_compiler
+  mkdir -p $base/build_compiler
+  pushd $base/build_compiler
   cmake -G Ninja \
-    -DCMAKE_INSTALL_PREFIX=$prefix \
+    -DCMAKE_INSTALL_PREFIX=$prefix/ \
     -DLLVM_CCACHE_BUILD='Off'\
-    -DCMAKE_EXPORT_COMPILE_COMMANDS='On'\
+    -DCMAKE_EXPORT_COMPILE_COMMANDS='On' \
     -DCMAKE_BUILD_TYPE='RelWithDebInfo' \
     -DLLVM_ENABLE_PROJECTS='clang' \
     -DLLVM_FORCE_ENABLE_STATS='On' \
@@ -46,11 +43,12 @@ if [ ! -f $clang_bin ]; then
     -DLLVM_OPTIMIZED_TABLEGEN='On' \
     -DBUILD_SHARED_LIBS='On' \
     -DLLVM_ENABLE_ASSERTIONS='Off' \
-    ../llvm
+    $current_dir/llvm
 
     ninja -j $threads
     ninja -j $threads install
     popd
+    pushd $base
     rm -f hpac_env.sh
     echo "#!/bin/bash" > hpac_env.sh
     echo "export PATH=$prefix/bin/:\$PATH" >> hpac_env.sh
@@ -59,6 +57,7 @@ if [ ! -f $clang_bin ]; then
     echo "export CPLUS_INCLUDE_PATH=$prefix/include:$CPLUS_INCLUDE_PATH" >> hpac_env.sh 
     echo "export CC=clang" >> hpac_env.sh
     echo "export CPP=clang++" >> hpac_env.sh
+    popd
 fi
 
 if [ ! -f $approx_runtime_lib ]; then
@@ -68,8 +67,6 @@ if [ ! -f $approx_runtime_lib ]; then
   torch_d=$(echo "$torch_path"/share/cmake/Torch)
   echo Torch directory: $torch_d
 
-  hdf5_d=$HDF5_Dir
-  echo HDF5 directory: $hdf5_d
 
   gpuarchsm=$(python3 approx/approx_utilities/detect_arch.py $prefix)
   gpuarch=$(echo $gpuarchsm | cut -d ';' -f 1)
@@ -87,11 +84,11 @@ if [ ! -f $approx_runtime_lib ]; then
 
      echo "Building for GPU architecture $gpuarch, compute capability $gpusm"
   fi
-  source hpac_env.sh
+  source $base/hpac_env.sh
 
 
-  mkdir build_hpac
-  pushd build_hpac
+  mkdir $base/build_hpac
+  pushd $base/build_hpac
   echo "PATH is " $PATH
   echo "Cmake version is:" $(cmake --version)
   CC=clang CPP=clang++ cmake -G Ninja \
@@ -104,21 +101,20 @@ if [ ! -f $approx_runtime_lib ]; then
     -DCMAKE_BUILD_TYPE='Debug' \
     -DCAFFE2_USE_CUDNN='On' \
       -DTorch_DIR=$torch_d \
-      -DHDF5_Dir=$hdf5_d \
       -DMKL_THREADING=gnu_thread \
-      -DCMAKE_CUDA_ARCHITECTURES=${gpusm: -2} \
-     ../approx
+      -DCMAKE_CUDA_ARCHITECTURES=70 \
+     $current_dir/approx
     ninja -j $threads
     ninja -j $threads install
     popd
-    echo "export HPAC_LIBRARY_LOCATION=$prefix/lib" >> hpac_env.sh
+    echo "export HPAC_LIBRARY_LOCATION=$prefix/lib" >> $base/hpac_env.sh
 fi
 
 
 if [ ! -f $openmp_lib ]; then
-    mkdir -p openmp/build/
-    pushd openmp/build/
-      cmake -GNinja ../ -DLIBOMP_OMPD_SUPPORT=OFF -DCMAKE_INSTALL_PREFIX=$prefix
+    mkdir -p $base/openmp/build/
+    pushd $base/openmp/build/
+      cmake -GNinja $current_dir/openmp/ -DLIBOMP_OMPD_SUPPORT=OFF -DCMAKE_INSTALL_PREFIX=$prefix
       ninja -j 20
       ninja install
     popd

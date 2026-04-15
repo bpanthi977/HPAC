@@ -1,11 +1,8 @@
-# This is a Spack Environment file.
-#
-# It describes a set of packages to be installed, along with
-# configuration settings.
+# cuda_arch = 70 for V100
 spack:
-  # add package specs to the `specs` list
   specs:
   - nlohmann-json
+  - cmake
   - ninja
   - mpi
   - hdf5
@@ -15,15 +12,63 @@ spack:
   concretizer:
     unify: when_possible
   packages:
+    llvm:
+      externals:
+      - spec: llvm@17.0.6+clang~flang~lld~lldb
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/clang
+            cxx: /usr/bin/clang++
+    gcc:
+      externals:
+      - spec: gcc@8.5.0 languages:='c,c++,fortran'
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/gcc
+            cxx: /usr/bin/g++
+            fortran: /usr/bin/gfortran
+      - spec: gcc@13.3.1 languages:='c,c++,fortran'
+        prefix: /opt/packages/gcc/v13.3.1-p20240614/b2gpu
+        modules:
+          - gcc/13.3.1-p20240614
+        extra_attributes:
+          compilers:
+            c: /opt/packages/gcc/v13.3.1-p20240614/b2gpu/bin/gcc
+            cxx: /opt/packages/gcc/v13.3.1-p20240614/b2gpu/bin/g++
+            fortran: /opt/packages/gcc/v13.3.1-p20240614/b2gpu/bin/gfortran
     all:
-      variants: [+cuda cuda_arch=86]
+      variants: [+cuda cuda_arch=70]
+      require: '%gcc@13.3.1'
       providers:
         blas: [openblas]
         lapack: [openblas]
         mpi: [openmpi]
-      compiler: [gcc@11.4.0]
-      require: '%gcc@11.4.0'
     hdf5:
-      require: '@1.14.3 -mpi +hl'
+      require: '@1.14.5 -mpi +hl +cxx'
+    python:
+      require: '@3.12.13'
     py-torch:
-      require: '@2.2.0 -distributed -valgrind -mkldnn +cuda'
+      require: '@2.10.0 -distributed -valgrind -mkldnn +cuda'
+    cuda:
+      buildable: false
+      externals:
+      - spec: cuda@12.4.0
+        prefix: /opt/packages/cuda/v12.4.0
+        modules:
+        - cuda/12.4.0
+        extra_attributes:
+          compilers:
+            cflags: "-I/opt/packages/cuda/v12.4.0/include"
+            ldflags: "-L/opt/packages/cuda/v12.4.0/lib64 -lcudart"
+    openmpi:
+      buildable: false
+      externals:
+      - spec: openmpi@5.0.8
+        modules:
+        - openmpi/5.0.8-gcc13.3.1
+    libfabric:
+      require: ~cuda
+    py-pyyaml:
+      require: '~libyaml'
